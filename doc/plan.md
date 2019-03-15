@@ -7,7 +7,7 @@ ___
 2. Write a prototype for this algorithm in Coq's programming language.
 3. Write a specification for this algorithm in Coq's logical language.
 4. Perform a proof showing that this algorithm satisfies this specification.
-
+ 
 ___
 ## Timetable (tentative) 
 
