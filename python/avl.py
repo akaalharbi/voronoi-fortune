@@ -313,5 +313,5 @@ def test(args=None):
         tree.insert(item)
         print()
         print(tree)
- 
+    return tree
 if __name__ == '__main__': test()
