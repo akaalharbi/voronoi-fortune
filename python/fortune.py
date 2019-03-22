@@ -10,6 +10,19 @@ An implementation of "Algorithm VORONOI DIAGRAM (P)" in Computational Geometry:
 DIRECTION: The sweepline moves downward
 
 Data structures:
+- Beachline:
+-- Walk from the left to the right and record every arc you see with extra info.
+-- beachline' := [p1_i, p2_l, p3_k, ...] where pj_i means the j-th arc which is
+-- part of a parabola that has p_i as its focal point.
+--- pj_k = [p_k, circle_event] 
+---- circle_event = coordinate, False 
+- Edges 
+- Tracing = [ [(pj_k, p{j+1}_l), [start, end] ], ...]
+-- (pj_k, p{j+1}_l) its and edge between these two arcs
+-- end can None untill 
+e.g. [p1_2, p_1, p_2,] i.e. enountered p_2, then p_1, and finally p_2    
+p_i = [focal ]    
+
 beachline := balanced binary tree, leaf := [site, (x,y) if circle-event or None ]
                                    node := [(p_i, p_j), edge-index]
 
