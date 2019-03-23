@@ -124,7 +124,7 @@ def search_vertical(beachline, site):
     x_site = site[0]
     
     if n == 1: 
-        return 0
+        return [0]
     for i in range(n-1):
         p, q = beachline[i], beachline[i+1]
         x = parabolas_intersection(p[0], q[0], site[1])
@@ -217,9 +217,12 @@ def handle_site(event, beachline, Edges, Q):
     INPUT: event = [xj, yj]
            beachline as in the preamble
     """
-    arc_above = search_vertical(beachline, event)
-    #touches a breakpoint
-    if len(arc_above) == 2: 
+    
+    #arc_above index in the beachline
+    arc_above  = search_vertical(beachline, event)
+
+    
+    if type(arc_above) == 2: #when the new sites intersects two arcs
         i = arc_above[0]
         p1, p2 = beachline[i][0], beachline[i+1][0]
         #position is a vertex
@@ -246,11 +249,16 @@ def handle_site(event, beachline, Edges, Q):
 
         
     #Add two arcs to the beach line
+    # Index:     i         i,i+1,i+2
+    #          \old/  to   \o/\n/\o/ , o: old, n: new
+    #           ---         -  -  -
     beachline.insert(ind, [event, None])
     beachline.insert(ind+2, [event, None])
     
     #check for circle events
-    p_middle, p_right = beachline[i+1][0], beachline[i+2][0]
+    # TODO wrong indices as they return the same arc
+    # TODO  when there are not enough arc to get a circle event
+    p_middle, p_right = beachline[ind+1][0], beachline[ind+2][0]
     if check_circle_event(event, p_middle, p_right):
         c = circumcenter(event, p_middle, p_right)
         beachline[i][1] = (event, p_middle, p_right)
@@ -296,4 +304,12 @@ def handle_circle(event, beachline, Edges, Q):
     left_left, right_right = beachline[i-2], beachline[i+2]
     circle_even_init(left_left[0], left[0], right[0], Q)   
     circle_even_init(left[0], right[0], right_right[0], Q)
-   
+
+if __name__ == '__main__':
+    #test sties
+    sites = [[23, 8], [87, 14], [72, 18], [73, 30], [25, 43], [93, 51], [65, 54], [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], [15, 89], [35, 96], [23, 98], [19, 99]]
+    vor_diag(sites)
+    #ordered sites
+    #[[23, 8], [87, 14], [72, 18], [73, 30], [25, 43], [93, 51], [65, 54],
+    # [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], 
+    # [15, 89], [35, 96], [23, 98], [19, 99]]
