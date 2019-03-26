@@ -285,33 +285,33 @@ def handle_site(event, beachline, Edges, Q, check = False):
     
     ind = arc_above[0]
     arc_above = beachline[ind] #only the focal point
-    #-----------this part is mainly for checking purposes--------------------
-    # Intuitively, the nearest parabola when we fix the x-coordinate should 
-    # be the output of search_verical.
-    # 
-    x0, y0 = event
-    y = lambda x, x1, y1, y0: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0) 
-    #distance function when x = x0 and y = parabola's formula
-    d = lambda x,  x1, y1, x0, y0:  (y(x, x1, y1, y0) -y0)**2
-    beach_cleaned = [arc[0] for arc in beachline]
-    dic = {tuple(arc): d(x0, arc[0], arc[1], x0, y0 ) for arc in beach_cleaned}
-    found_arc = min(dic, key = lambda key: dic[key])
-    print("The check function found   : ", found_arc)
-    print("while search vertical found: ", tuple(arc_above[0]))
-    print("\n ---------------------------------")   
-    print("event is ", event)
-    print("beachline is ", beach_cleaned)
-    print("\n--------------------------\n")
-    print("Edges are ", Edges)
-    print("____________________________________________\n\n\n")
-    
-#    with open('results.csv', 'a') as results:
-#        results.write(str(event) + '\n')
-#        results.write(str(arc_above[0]) + '\n')
-#        beach_cleaned = [arc[0] for arc in beachline]
-#        for arc in beach_cleaned:
-#            results.write(str(arc) + ', ')
-    #--------End check--------------------------------
+#    #-----------this part is mainly for checking purposes--------------------
+#    # Intuitively, the nearest parabola when we fix the x-coordinate should 
+#    # be the output of search_verical.
+#    # 
+#    x0, y0 = event
+#    y = lambda x, x1, y1, y0: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0) 
+#    #distance function when x = x0 and y = parabola's formula
+#    d = lambda x,  x1, y1, x0, y0:  (y(x, x1, y1, y0) -y0)**2
+#    beach_cleaned = [arc[0] for arc in beachline]
+#    dic = {tuple(arc): d(x0, arc[0], arc[1], x0, y0 ) for arc in beach_cleaned}
+#    found_arc = min(dic, key = lambda key: dic[key])
+#    print("The check function found   : ", found_arc)
+#    print("while search vertical found: ", tuple(arc_above[0]))
+#    print("\n ---------------------------------")   
+#    print("event is ", event)
+#    print("beachline is ", beach_cleaned)
+#    print("\n--------------------------\n")
+#    print("Edges are ", Edges)
+#    print("____________________________________________\n\n\n")
+#    
+##    with open('results.csv', 'a') as results:
+##        results.write(str(event) + '\n')
+##        results.write(str(arc_above[0]) + '\n')
+##        beach_cleaned = [arc[0] for arc in beachline]
+##        for arc in beach_cleaned:
+##            results.write(str(arc) + ', ')
+#    #--------End check--------------------------------
     
     #Is there a false alarm?
     if arc_above[-1] != False: arc_above[-1] = False
@@ -398,5 +398,16 @@ def handle_circle(event, beachline, Edges, Q):
 
 if __name__ == '__main__':
     #test sties
-    sites = [[23, 8], [87, 14], [72, 18], [73, 30], [0, -20], [1, -30], [25, 43], [93, 51], [65, 54], [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], [15, 89], [35, 96], [23, 98], [19, 99]]
+    #sites = [[23, 8], [87, 14], [72, 18], [73, 30], [0, -20], [1, -30], [25, 43], [93, 51], [65, 54], [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], [15, 89], [35, 96], [23, 98], [19, 99]]
+
+    #seg = vor_diag(sites)
+    # generate random points
+    from random import randint
+    sites = [[randint(-100, 100), randint(-100, 100)] for i in range(30)]
+    print(sites)
+    sites = [[s[1], s[0]] for s in sites]
+    print("------------------------------- \n sites reversed \n")
+    print(sites)
+    print("----------------------------")
     seg = vor_diag(sites)
+    
