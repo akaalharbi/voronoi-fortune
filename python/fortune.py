@@ -35,8 +35,10 @@ from math import sqrt
 # ------Auxiliaries Functions---------------#
 
 def parabolas_intersection(p1, p2, y0):
-    from math import sqrt
+
     """
+    Check: ok
+    Warning: Pay attention to the left and right solution 
     INPUT: pi = [xi, yi]
 
     This expression was computed using SageMath. The result by hand is more
@@ -60,7 +62,9 @@ def parabolas_intersection(p1, p2, y0):
 
 
 def check_circle_event( p, middle, right):
-    """ p is the last found site. There will be a site event iff the
+    """ 
+    Check: review
+    p is the last found site. There will be a site event iff the
     lowest point of the circle that touches p , right, left is below/on
     the sweepline. In our case, we assume the sweep-line just touched p.
 
@@ -83,7 +87,8 @@ def check_circle_event( p, middle, right):
 
 def search_edge(Edges, x_pos):
     #TODO: the list is an ordered list, use this fact!
-    """INPUT:
+    """ Check: review
+        INPUT:
         Edges as in the preamble
         site = site_event
        OUTPUT: the index of the edge that lies after x_pos or exactly at it.
@@ -109,54 +114,63 @@ def search_edge(Edges, x_pos):
         
     return n-1 #the left most
 
+
+def parabola (p, y0):
+    """
+    p is the focla, y0 is the directrix"""
+    
+    x1, y1 = p
+    return lambda x: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0)
+
+def up(a, d, b):
+    """Returns the sign of the larger solution"""
+    s1, s2 = (a+sqrt(d))/b, (a-sqrt(d))/b
+    if s1 > s2: return 1
+    else: return -1
+
 def before(p1, p2, p):
-    """ two case:
-    Case 1       ,     Case 2
-        p1 |p2        p1  p2 p1
-        \_/\_/    or \         /  
-         ^            \__   __/     
-         |               \_/ ^
-         p                   |     
-                             p
-    Where is p?
-    OUTPUT: [0, c], [1, c], [2, c], [0, 1, c], [1, 2, c]  
-            * [0, c] when p lies on the left of the diagram, or the domain the 
-              rightmost domain of p1.
-            * [2, c] when it lies to the right of the diagram
-            * {2nd-Diagram} [1, c] when p lies on p2 domain
-            * [0, 1, c] when p lies exactly between p1 and p2 domain
-            * [1, 2, c] when p lies exactly between p2 and p1 domain, if any
-            * c stands for the case number"""
+    """ Check: not ok!
+    two case:
+    break  |      
+        p1 | p2   
+        \_/*\_/    
+         ^             
+         |        
+         p        
+    Where is p? is it before the break point *?
+    OUTPUT: [i, flag]   
+            * i := False when p is on the right of *
+            * i := True when p is on the left  of * 
+            * flag :=  True when p is exactly on the same vertical line as *
+            * flag := False otherwise """
              
     x_site, y_site = p
     a, disc, b = parabolas_intersection(p1, p2, y_site)
-    #first case: one intersection point between parabolas
-    if abs(disc) < 0.00001: 
-        if (b*x_site - a) < 0:
-            return [0, 1]
-        if (b*x_site + a) == 0:
-            return [0, 1, 1]
-        return [2, 1]
-      
-    ineq = (b*x_site - a)**2 
-    cond_left = ineq < -disc
-    cond_right = ineq < disc
-    eq_left = ineq == -disc
-    eq_right = ineq == disc
+    # TODO: get rid of the square root, and hadnle the signs carefully 
+    s1, s2 = (a+sqrt(disc))/b, (a-sqrt(disc))/b
+    left, right = min(s1, s2), max(s1, s2) 
+    # if p1 was discovered first, by the sweepline, then we take the minimum
+    # solution, else we take the maximum.
     
-    if cond_left:
-        return [0, 2]
-    if cond_right:
-        return [1, 2]
-    if eq_left: 
-        return [0, 1, 2]
-    if eq_right:
-        return [1, 2, 2]
-    return [2, 2] #rightmost
-   
+    if (p1[1], p1[0]) < (p2[1], p2[0]):
+        star = left
+    else: star = right
+    
+#    cond_left = left > x_site
+#    cond_right = right < x_site
+#    cond_middle =  (left <  x_site) and (right > x_site)
+    equality =  abs(star - x_site) < 0.00001 #almost equal
+    
+    if star > x_site:
+        return [True, False]
+    if equality:
+        return [True, True]
+    return [False, False]
+
 def search_vertical(beachline, site):
     #TODO: the list is an ordered list, use this fact!
-    """INPUT:
+    """ Check: review
+        INPUT:
         beachline as in the preamble
         site = site_event
        OUTPUT: the index/indices of arcs where the vertical line passes through
@@ -172,19 +186,20 @@ def search_vertical(beachline, site):
         return [0]
     i = 0 #index of the arc
     while i <  n-1:
-        s = 0 #shift
         p, q = beachline[i], beachline[i+1]
-        b = before(p[0], q[0], site)
-        s = b.pop() #remove the last element
-        add_i = lambda x: i+x
-        if b[0] != 0:
-            return list(map(add_i,  b)) #fix the indices and 
-        i += s            
-            
+        is_before, flag = before(p[0], q[0], site)
+        if is_before and flag:
+            return [i, i+1]
+        if is_before and not flag:
+            return [i]
+        i += 1
+         
+    return [n-1] #the right most
 
 
 def vertical_intersection(parabola, point):
-    """ The parabola is given by its focal point where the directrix is
+    """ Check: 
+    The parabola is given by its focal point where the directrix is
     y = point[1]. This function returns the intersection of the vertical line,
     passes through point,  and the parabola.
     --------------------
@@ -196,7 +211,8 @@ def vertical_intersection(parabola, point):
 
 
 def lines_intersection(l1, l2):
-    """INPUT:
+    """ Check: ok
+    INPUT:
         l1 : a1x+b1y+c1 = 0
        l2 : a2x+b2y+c2 = 0
        l1 is in the form: [ (a1, b1), c1] """
@@ -211,7 +227,8 @@ def lines_intersection(l1, l2):
 
 
 def circumcenter(p1, p2, p3):
-    """ compute the circumcenter
+    """ Check: ok
+    compute the circumcenter
     INPUT: pi = [xi, yi]"""
 
     # no check for collinearity as they define a circle event!
@@ -285,33 +302,33 @@ def handle_site(event, beachline, Edges, Q, check = False):
     
     ind = arc_above[0]
     arc_above = beachline[ind] #only the focal point
-#    #-----------this part is mainly for checking purposes--------------------
-#    # Intuitively, the nearest parabola when we fix the x-coordinate should 
-#    # be the output of search_verical.
-#    # 
-#    x0, y0 = event
-#    y = lambda x, x1, y1, y0: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0) 
-#    #distance function when x = x0 and y = parabola's formula
-#    d = lambda x,  x1, y1, x0, y0:  (y(x, x1, y1, y0) -y0)**2
-#    beach_cleaned = [arc[0] for arc in beachline]
-#    dic = {tuple(arc): d(x0, arc[0], arc[1], x0, y0 ) for arc in beach_cleaned}
-#    found_arc = min(dic, key = lambda key: dic[key])
-#    print("The check function found   : ", found_arc)
-#    print("while search vertical found: ", tuple(arc_above[0]))
-#    print("\n ---------------------------------")   
-#    print("event is ", event)
-#    print("beachline is ", beach_cleaned)
-#    print("\n--------------------------\n")
-#    print("Edges are ", Edges)
-#    print("____________________________________________\n\n\n")
-#    
-##    with open('results.csv', 'a') as results:
-##        results.write(str(event) + '\n')
-##        results.write(str(arc_above[0]) + '\n')
-##        beach_cleaned = [arc[0] for arc in beachline]
-##        for arc in beach_cleaned:
-##            results.write(str(arc) + ', ')
-#    #--------End check--------------------------------
+    #-----------this part is mainly for checking purposes--------------------
+    # Intuitively, the nearest parabola when we fix the x-coordinate should 
+    # be the output of search_verical.
+    # 
+    x0, y0 = event
+    y = lambda x, x1, y1, y0: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0) 
+    #distance function when x = x0 and y = parabola's formula
+    d = lambda x,  x1, y1, x0, y0:  (y(x, x1, y1, y0) -y0)**2
+    beach_cleaned = [arc[0] for arc in beachline]
+    dic = {tuple(arc): d(x0, arc[0], arc[1], x0, y0 ) for arc in beach_cleaned}
+    found_arc = min(dic, key = lambda key: dic[key])
+    print("The check function found   : ", found_arc)
+    print("while search vertical found: ", tuple(arc_above[0]))
+    print("\n ---------------------------------")   
+    print("event is ", event)
+    print("beachline is ", beach_cleaned)
+    print("\n--------------------------\n")
+    print("Edges are ", Edges)
+    print("____________________________________________\n\n\n")
+    
+#    with open('results.csv', 'a') as results:
+#        results.write(str(event) + '\n')
+#        results.write(str(arc_above[0]) + '\n')
+#        beach_cleaned = [arc[0] for arc in beachline]
+#        for arc in beach_cleaned:
+#            results.write(str(arc) + ', ')
+    #--------End check--------------------------------
     
     #Is there a false alarm?
     if arc_above[-1] != False: arc_above[-1] = False
@@ -398,16 +415,18 @@ def handle_circle(event, beachline, Edges, Q):
 
 if __name__ == '__main__':
     #test sties
-    #sites = [[23, 8], [87, 14], [72, 18], [73, 30], [0, -20], [1, -30], [25, 43], [93, 51], [65, 54], [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], [15, 89], [35, 96], [23, 98], [19, 99]]
+    sites = [[23, 8], [87, 14], [72, 18], [73, 30], [0, -20], [1, -30], [25, 43], [93, 51], [65, 54], [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], [15, 89], [35, 96], [23, 98], [19, 99]]
 
     #seg = vor_diag(sites)
     # generate random points
-    from random import randint
-    sites = [[randint(-100, 100), randint(-100, 100)] for i in range(30)]
-    print(sites)
-    sites = [[s[1], s[0]] for s in sites]
-    print("------------------------------- \n sites reversed \n")
-    print(sites)
-    print("----------------------------")
+    #from random import randint
+    #sites = [[randint(-100, 100), randint(-100, 100)] for i in range(30)]
+    #sites = [[-15, -23], [-12, -10], [-69, -27], [-96, -69], [44, 74], [-88, 84], [85, 95], [-42, -77], [-65, 17], [12, 35], [-8, 62], [-85, 59], [76, -17], [-55, -78], [-68, 34], [55, 97], [95, 34], [-51, -98], [57, -5], [-50, 62], [-99, -77], [-2, 3], [-18, -81], [77, -49], [26, 56], [-42, 61], [35, -56], [57, 19], [4, 18], [83, -81]]
+    sites = [ (0, -120), (1, -110), (-12.212670403551893, -100), (-77, -99), (-69, -96), (84, -88), (59, -85), [-27, -69]]    #print(sites)
+    #sites = [[s[1], s[0]] for s in sites]
+    #print("------------------------------- \n sites reversed \n")
+    #print(sites)
+    #print("----------------------------")
     seg = vor_diag(sites)
-    
+    p1, p2 = (0, -120), (1, -110)
+    p3 = (-12.212670403551893, -100)
