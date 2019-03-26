@@ -5,7 +5,7 @@
 Created on Mon Mar 18 17:44:50 2019
 
 An implementation of "Algorithm VORONOI DIAGRAM (P)" in Computational Geometry:
-DIRECTION: The sweepline moves downward
+DIRECTION: The sweepline moves upward
 
 Data structures:
 
@@ -15,12 +15,14 @@ Data structures:
 -- part of a parabola that has p_i as its focal point.
 --- pj_k = [p_k, circle_event]
 ---- p_k = [x, y]
----- circle_event = coordinate, False
+---- circle_event = [[l, m, r], m[1]] the three arcs with the y-coordinate of
+                    the disappearing arc
 
 - Edges
-- Edges = [ [(p_k, p_l), [start, end] ], ...]
+- Edges = [ [(p_k, p_l), [start, end] , boolean], ...]
 -- (pj_k, p{j+1}_l) its and edge between these two arcs
 -- end can be None untill it is discovered by a circle event.
+-- boolean indicates it's a complete edge. This feature is for drawing.
 - edges = [(start, end), ...] we may add the sites that they seperate.
 
 - Queue:
@@ -73,21 +75,26 @@ def check_circle_event( p, middle, right):
     --------------------
     INPUT: pi, left, right = [xi, yi], [xl, yl], [xr, yr]
           """
+    if collinear(p, middle, right): return False 
     c = circumcenter(p, middle, right)
+    y  = c[1]
+    y0 = max(p[1], middle[1], right[1])
     radius_sq = (c[0] - p[0])**2   + (c[1] - p[1])**2
     #the y-coordinate of project(c) onto the sweepline is p[1]
-    #the lowestpoint b = c + radius is below/on y = p[1] iff
+    #the lowestpoint b = c + radius is above/on y = p[1] iff
     #c[1] + radius <= p[1] <==> radius_sq <= (p[1] - c[1])**2
-
-    if  radius_sq <= (p[1] - c[1])**2 : #the y-coordinate
+    
+    if radius_sq >= (p[1] - c[1])**2 : #the y-coordinate
         return c
+    
     #else:
+    if y > y0: return c
     return False
 
 
 def search_edge(Edges, x_pos):
     #TODO: the list is an ordered list, use this fact!
-    """ Check: review
+    """ Check: ok
         INPUT:
         Edges as in the preamble
         site = site_event
@@ -143,7 +150,6 @@ def before(p1, p2, p):
             * i := True when p is on the left  of * 
             * flag :=  True when p is exactly on the same vertical line as *
             * flag := False otherwise """
-             
     x_site, y_site = p
     a, disc, b = parabolas_intersection(p1, p2, y_site)
     # TODO: get rid of the square root, and hadnle the signs carefully 
@@ -155,7 +161,8 @@ def before(p1, p2, p):
     if (p1[1], p1[0]) < (p2[1], p2[0]):
         star = left
     else: star = right
-    
+    print(star)
+    print(p)
 #    cond_left = left > x_site
 #    cond_right = right < x_site
 #    cond_middle =  (left <  x_site) and (right > x_site)
@@ -179,7 +186,8 @@ def search_vertical(beachline, site):
                  |
                site     -x-> axes
        """
-
+    print("Site is ")
+    print(site)
     n = len(beachline)
 
     if n == 1:
@@ -263,11 +271,20 @@ def vor_diag(sites):
 
     while Q: #not empty
         event = Q.pop(0) #Q = [a, b, c] --> event = a ,   Q = [b, c]
-
-        if type(event[0]) != type([]) :
+        if event == [59, -85]: 
+            print("pay attention to me!")
+        if type(event[0]) != type([]):
+            print("Handling the site event  ")
+            print(event)
             beachline, Edges, Q = handle_site(event, beachline, Edges, Q )
             Q.sort(key = lambda cord : cord[1])
+
         else :
+            print("I am going to handle a circle event")
+            print(event)
+            print('_______________________________________')
+            if event == [[[-69, -96], [-77, -99], [84, -88]], -99]:
+                pass
             beachline, Edges, Q = handle_circle(event, beachline, Edges, Q)
     return Edges
 
@@ -280,73 +297,74 @@ def handle_site(event, beachline, Edges, Q, check = False):
     """we assume the beachline is not empty since we handled an event
     INPUT: event = [xj, yj]
            beachline as in the preamble
+    Summary: 
+        - Find the arc above the event
+        -- Deal with the special case, if any
+        - If it was labeled with a circle event, set it as a False alarm
+        - Compute the vertical intersection where the new two edges will start
+        - Creat two entries for the new edges with apporpiate index
+        - Check for circle_event where the event is the right-most or leftmost
+          arc.
+        
     """
     # TODO maintain a list of intersection points that have the same length as
-    # arc_above index in the beachline
+    # find the position of the arc that lies above the event
     arc_above  = search_vertical(beachline, event)
     
-    
+    # Special case
     if len(arc_above) == 2: #when the new sites intersects two arcs i.e. breakpoint
         i = arc_above[0]
         p1, p2 = beachline[i][0], beachline[i+1][0]
         #choice for a solution of the parabolas intersection
-        position = vertical_intersection(p1, event)
+        # x, y of the intersection
+        x, position = event[0], vertical_intersection(p1, event)
+        
         edg_ind = search_edge(Edges, position)
                       #= [ [p1, p2]        , [Edges[edg_ind][1][0], end       ]                                  ]
-        Edges[edg_ind] = [Edges[edg_ind][0], [Edges[edg_ind][1][0], position ]]
-        Edges.insert(edg_ind,  [[event, p2],[position, None]] )#right
-        Edges.insert(edg_ind,  [[p1, event],[position, None]] )#left
-        beachline.insert(i+1, [event, None])
-
+        Edges[edg_ind] = [Edges[edg_ind][0], [[Edges[edg_ind][1][0],\
+                         (event[0], position)], True ]]
+        Edges.insert(edg_ind,  [[event, p2],[(x, position), None]], False )#right
+        Edges.insert(edg_ind,  [[p1, event],[(x, position), None]], False )#left
+        beachline.insert(i+1, [event, False])
+        #Exits
         return beachline, Edges, Q
     
-    ind = arc_above[0]
-    arc_above = beachline[ind] #only the focal point
+    # Back to the generic case
+    # renaming variables for readability
+    ind = arc_above[0] #search_vertical alway returns a list of positions
+    arc_above = beachline[ind] # = [ [x_p, y_p], boolean]
+
     #-----------this part is mainly for checking purposes--------------------
-    # Intuitively, the nearest parabola when we fix the x-coordinate should 
-    # be the output of search_verical.
     # 
-    x0, y0 = event
-    y = lambda x, x1, y1, y0: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0) 
-    #distance function when x = x0 and y = parabola's formula
-    d = lambda x,  x1, y1, x0, y0:  (y(x, x1, y1, y0) -y0)**2
-    beach_cleaned = [arc[0] for arc in beachline]
-    dic = {tuple(arc): d(x0, arc[0], arc[1], x0, y0 ) for arc in beach_cleaned}
-    found_arc = min(dic, key = lambda key: dic[key])
-    print("The check function found   : ", found_arc)
-    print("while search vertical found: ", tuple(arc_above[0]))
+    print("search vertical found: ", tuple(arc_above[0]))
     print("\n ---------------------------------")   
     print("event is ", event)
-    print("beachline is ", beach_cleaned)
-    print("\n--------------------------\n")
+#    print("beachline is ", beach_cleaned)
+#    print("\n--------------------------\n")
     print("Edges are ", Edges)
     print("____________________________________________\n\n\n")
     
-#    with open('results.csv', 'a') as results:
-#        results.write(str(event) + '\n')
-#        results.write(str(arc_above[0]) + '\n')
-#        beach_cleaned = [arc[0] for arc in beachline]
-#        for arc in beach_cleaned:
-#            results.write(str(arc) + ', ')
     #--------End check--------------------------------
+
     
-    #Is there a false alarm?
+    # Is there a false alarm?
     if arc_above[-1] != False: arc_above[-1] = False
-    # now arc_above consists of the focal point
-    arc_above = arc_above[0]
+    # No needs to maintain the circle_event flag
+    arc_above = arc_above[0] # = [x_p, y_p]
+    
     #x-coordinate of the vertical intersection
     position = vertical_intersection(arc_above, event)
-    #the index of the edge that comes exactly after "position"
   
-    #---ordered edges------
+    #--- Edges are sorted, hence we look for a suitable index ------
     edg_ind = search_edge(Edges, position)
     if edg_ind: pass #Edges are not an empty list
     else: edg_ind = 0
     #-----------------------
     
     #site = Edges[edg_ind][0][0] #the focal of the arc that has been broken 
-    Edges.insert(edg_ind,  [[event, arc_above],[position, None]] )
-    Edges.insert(edg_ind,  [[arc_above, event],[position, None]] )
+    x = event[0]
+    Edges.insert(edg_ind,  [[event, arc_above],[(x, position), None]] )
+    Edges.insert(edg_ind,  [[arc_above, event],[(x, position), None]] )
     
     #Add two arcs to the beach line
     # Index:     i         i,i+1,i+2
@@ -354,36 +372,45 @@ def handle_site(event, beachline, Edges, Q, check = False):
     #           ---         -  -  -
     beachline.insert(ind+1, [event, False])
     beachline.insert(ind+2, [arc_above, False]) #arc_above ::= [focal, false]
-
-    #p_middle, p_right = beachline[ind+2][0], beachline[ind+3][0]
-    c = False
+    
+    # ---- Checking for circle events -----
+    c = False # default value
     if len(beachline[ind:]) >= 4: # do we have enough arcs for a circle event
         c = check_circle_event(event, beachline[ind+2][0],beachline[ind+3][0])
     
-    #a circle event has been detected
+    # a circle event has been detected
     if c:
+        print("Check circle")
         beachline[ind+2][1] = True
-        Q.append([beachline[ind+2][0], c])
-    #right most
+        #event_to_add = beachline[ind+2][0][:] #deepcopy
+        l, m, r =beachline[ind+1][0] , beachline[ind+2][0], beachline[ind+3][0]
+        Q.append([[l, m, r], m[1]]) 
+    
+    #chekc whe event is the right most
     if len(beachline[:ind]) >= 2: # do we have enough arcs for a circle event
-        c = check_circle_event(beachline[ind-2][0], beachline[ind-1][0], event)
+        c = check_circle_event(beachline[ind-1][0], beachline[ind][0], event)
 
     if c:
-        beachline[i][1] = True
-        Q.append([beachline[ind-1][0], c])
+        beachline[ind][1] = True
+        l, m, r =beachline[ind-1][0] , beachline[ind][0], beachline[ind+1][0]
+        Q.append([[l, m, r], m[1]]) 
 
+    print("Beachline is ")
+    print(beachline)
+    print("--------------------------\n")
+    
     return beachline, Edges, Q
 
 
-def circle_even_init(left, middle, right, Q):
+def circle_even_init(l, m, r, Q):
     """INPUT left, middle, right are focals of parabolas
     i.e. left = p_k = [xk, yk]
     Q is the Queue event. Sorting is local so we need to preform it outside"""
 
-    c = check_circle_event(left[0], middle[0], right[0])
+    c = check_circle_event(l, m, r)
     if c: #python treats numbers as true
-        middle[1] = True
-        Q.append([middle[0], c])
+        y = m[1] 
+        Q.append([[l, m, r], y])
     
     return c
 
@@ -392,37 +419,69 @@ def collinear(p1, p2, p3):
     except: return p1[1] == p2[1] == p3[1] == 0
     
 def handle_circle(event, beachline, Edges, Q):
-    #Search for the exact index
-    for i in range(len(beachline)):
-        if beachline[i][0] == event[0]: ind = i
+    # event := [[left, middle, right], middle.y] 
+    left, middle, right = event[0] # TODO why event passed as tuples?
+    
+    #Search for the exact index where the triple occurs    
+    ind = -1
+    for i in range(1, len(beachline)-2):
+        if beachline[i-1][0] == left and beachline[i][0] == middle\
+        and beachline[i+1][0] == right: 
+            ind = i
+            break
+        
+    
     #set the circle event for the two neighboring arcs to false
-    c = event[1] #the circumcenter
-    left, right = beachline[ind-1][1], beachline[ind+1][1]
-    left[1], right[1] = False
+    beachline[ind-1][1], beachline[ind+1][1] = False, False
+    #Where the arc will vanish
+    c = circumcenter(left, middle, right)
 
     #find the corresponding edge
-    for i in range(len(Edges)):
-        if Edges[i][0] == [left, event]:
-            ind_edge = i
-    left_edge, right_edge = Edges[ind_edge], Edges[ind_edge+1]
-    left_edge[1][1], right_edge[1][1] = c, c
+    ind_edg1 = find_first([left, middle], Edges)
+    ind_edg2 = find_first([middle, right], Edges)
+    if not ind_edg1 or not ind_edg2: return # TODO something wrong!
 
-    #check for a circle event finally
-    left, right = beachline[i-1], beachline[i+1]
-    left_left, right_right = beachline[i-2], beachline[i+2]
-    circle_even_init(left_left[0], left[0], right[0], Q)
-    circle_even_init(left[0], right[0], right_right[0], Q)
+    
+    # Set end points for the edges between left and middle, middle and right      
+    # left_edge, right_edge = Edges[ind_edge], Edges[ind_edge+1]
+    Edges[ind_edg1][1][1], Edges[ind_edg2][1][1] = c, c
+    # Also, They are complete
+    Edges[ind_edg1][-1], Edges[ind_edg2][-1] = True, True
+    # check for a circle event finally
+    #fix the indices
+    
+    
+    try: # we may not always have enough number of edges
+        left, right = beachline[ind-1], beachline[ind+1]
+        left_left, right_right = beachline[ind-2], beachline[ind+2]
+        circle_even_init(left_left[0], left[0], right[0], Q)
+        circle_even_init(left[0], right[0], right_right[0], Q)
+    except: pass
+    # Finally, we remove the arc
+    del beachline[ind]
+    
+    return beachline, Edges, Q
 
+def find_first(s, lis):
+    """a typical element in lis is in the form [a, ....]
+       returns the index of the  first occurence of the
+       form [s, ...]"""
+    
+    for i in range(len(lis)):
+        if s == lis[i][0]: return i
+       
+    
+    
 if __name__ == '__main__':
     #test sties
-    sites = [[23, 8], [87, 14], [72, 18], [73, 30], [0, -20], [1, -30], [25, 43], [93, 51], [65, 54], [81, 61], [65, 65], [5, 67], [44, 70], [15, 74], [31, 81], [30, 82], [15, 89], [35, 96], [23, 98], [19, 99]]
+    sites = [[-23, -15], [-10, -12], [-27, -69], [-69, -96], [74, 44], [84, -88], [95, 85], [-77, -42], [17, -65], [35, 12], [62, -8], [59, -85], [-17, 76], [-78, -55], [34, -68], [97, 55], [34, 95], [-98, -51], [-5, 57], [62, -50], [-77, -99], [3, -2], [-81, -18], [-49, 77], [56, 26], [61, -42], [-56, 35], [19, 57], [18, 4], [-81, 83]]
 
     #seg = vor_diag(sites)
     # generate random points
     #from random import randint
     #sites = [[randint(-100, 100), randint(-100, 100)] for i in range(30)]
     #sites = [[-15, -23], [-12, -10], [-69, -27], [-96, -69], [44, 74], [-88, 84], [85, 95], [-42, -77], [-65, 17], [12, 35], [-8, 62], [-85, 59], [76, -17], [-55, -78], [-68, 34], [55, 97], [95, 34], [-51, -98], [57, -5], [-50, 62], [-99, -77], [-2, 3], [-18, -81], [77, -49], [26, 56], [-42, 61], [35, -56], [57, 19], [4, 18], [83, -81]]
-    sites = [ (0, -120), (1, -110), (-12.212670403551893, -100), (-77, -99), (-69, -96), (84, -88), (59, -85), [-27, -69]]    #print(sites)
+    #sites = [ (0, -120), (1, -110), (-12.212670403551893, -100), (-77, -99), (-69, -96), (84, -88), (59, -85), [-27, -69]]    #print(sites)
     #sites = [[s[1], s[0]] for s in sites]
     #print("------------------------------- \n sites reversed \n")
     #print(sites)
