@@ -63,33 +63,51 @@ def parabolas_intersection(p1, p2, y0):
 
 
 
-def check_circle_event( p, middle, right):
+def check_circle_event( l, m, r, y0):
     """ 
     Check: review
-    p is the last found site. There will be a site event iff the
-    lowest point of the circle that touches p , right, left is below/on
+    l or r are the last found site. There will be a site event iff the
+    lowest point of the circle that touches l , right, left is below/on
     the sweepline. In our case, we assume the sweep-line just touched p.
+    y0 is the directrix.
 
     Note: This method will cover also the case where the vertical line,
     from p to the  beachline, touches a breakpoint.
     --------------------
-    INPUT: pi, left, right = [xi, yi], [xl, yl], [xr, yr]
+    INPUT: left, middle, right = [xl yl], [xm, ym], [xr, yr]
           """
-    if collinear(p, middle, right): return False 
-    c = circumcenter(p, middle, right)
-    y  = c[1]
-    y0 = max(p[1], middle[1], right[1])
-    radius_sq = (c[0] - p[0])**2   + (c[1] - p[1])**2
-    #the y-coordinate of project(c) onto the sweepline is p[1]
-    #the lowestpoint b = c + radius is above/on y = p[1] iff
-    #c[1] + radius <= p[1] <==> radius_sq <= (p[1] - c[1])**2
     
-    if radius_sq >= (p[1] - c[1])**2 : #the y-coordinate
-        return c
+    
+    
+    
+#    if collinear(l, m, r): return False 
+#    c = circumcenter(l, m, r)
+#    y  = c[1]
+#    y0 = max(l[1], m[1], r[1])
+#    radius_sq = (c[0] - l[0])**2   + (c[1] - l[1])**2
+#    #the y-coordinate of project(c) onto the sweepline is l[1]
+#    #the lowestpoint b = c + radius is above/on y = l[1] iff
+#    #c[1] + radius <= l[1] <==> radius_sq <= (l[1] - c[1])**2
+#    
+#    if radius_sq >= (l[1] - c[1])**2 : #the y-coordinate
+#        return c
     
     #else:
-    if y > y0: return c
-    return False
+#    if y >= y0: return c
+#    return False
+    if collinear(l, m, r): return False
+    ax, ay = l
+    bx, by = m
+    cx, cy = r
+    
+    # check if bc is a "right turn" from 
+    if ((by - ay)*(cx - ax) - (cy - ay)*(bx - ax)) > 0: return False
+    c = circumcenter(l, m, r) 
+    radius   = sqrt((c[0] - m[0])**2   + (c[1] - m[1])**2)
+    upper_point = [c[0], radius+c[1]]
+    if upper_point[1] >= y0: 
+        print(upper_point)
+        return upper_point[1]
 
 
 def search_edge(Edges, x_pos):
@@ -161,8 +179,6 @@ def before(p1, p2, p):
     if (p1[1], p1[0]) < (p2[1], p2[0]):
         star = left
     else: star = right
-    print(star)
-    print(p)
 #    cond_left = left > x_site
 #    cond_right = right < x_site
 #    cond_middle =  (left <  x_site) and (right > x_site)
@@ -186,8 +202,7 @@ def search_vertical(beachline, site):
                  |
                site     -x-> axes
        """
-    print("Site is ")
-    print(site)
+       
     n = len(beachline)
 
     if n == 1:
@@ -341,8 +356,8 @@ def handle_site(event, beachline, Edges, Q, check = False):
     print("event is ", event)
 #    print("beachline is ", beach_cleaned)
 #    print("\n--------------------------\n")
-    print("Edges are ", Edges)
-    print("____________________________________________\n\n\n")
+#    print("Edges are ", Edges)
+#    print("____________________________________________\n\n\n")
     
     #--------End check--------------------------------
 
@@ -376,24 +391,29 @@ def handle_site(event, beachline, Edges, Q, check = False):
     # ---- Checking for circle events -----
     c = False # default value
     if len(beachline[ind:]) >= 4: # do we have enough arcs for a circle event
-        c = check_circle_event(event, beachline[ind+2][0],beachline[ind+3][0])
+        m, r, y0  =  beachline[ind+2][0],beachline[ind+3][0], event[1]
+        c = check_circle_event(event, m, r, y0)
     
     # a circle event has been detected
     if c:
-        print("Check circle")
+        print("Circle event has been detected : left")
         beachline[ind+2][1] = True
         #event_to_add = beachline[ind+2][0][:] #deepcopy
-        l, m, r =beachline[ind+1][0] , beachline[ind+2][0], beachline[ind+3][0]
-        Q.append([[l, m, r], m[1]]) 
+        Q.append([[event, m, r], c]) 
+        print([[event, m, r], c])
     
     #chekc whe event is the right most
     if len(beachline[:ind]) >= 2: # do we have enough arcs for a circle event
-        c = check_circle_event(beachline[ind-1][0], beachline[ind][0], event)
+        r, m, y0  =  beachline[ind-1][0], beachline[ind][0], event[1]
+        c = check_circle_event(r, m, event, y0)
 
     if c:
+        print("Circle event has been detected: right")
+        
         beachline[ind][1] = True
         l, m, r =beachline[ind-1][0] , beachline[ind][0], beachline[ind+1][0]
-        Q.append([[l, m, r], m[1]]) 
+        print(l, m, r, c)
+        Q.append([[l, m, r], c]) 
 
     print("Beachline is ")
     print(beachline)
@@ -402,44 +422,59 @@ def handle_site(event, beachline, Edges, Q, check = False):
     return beachline, Edges, Q
 
 
-def circle_even_init(l, m, r, Q):
+def circle_even_init(l, m, r, y,  Q):
     """INPUT left, middle, right are focals of parabolas
     i.e. left = p_k = [xk, yk]
     Q is the Queue event. Sorting is local so we need to preform it outside"""
 
-    c = check_circle_event(l, m, r)
+    c = check_circle_event(l, m, r, y)
     if c: #python treats numbers as true
-        y = m[1] 
         Q.append([[l, m, r], y])
     
     return c
 
 def collinear(p1, p2, p3):
-    try: return p1[0]/p1[1] == p2[0]/p2[1] == p3[0]/p3[1]  
-    except: return p1[1] == p2[1] == p3[1] == 0
+    try:
+        if p1 == p2 or p2 == p3 or p3 == p1: return True
+        return p1[0]/p1[1] == p2[0]/p2[1] == p3[0]/p3[1]  
+    except: 
+        return p1[1] == p2[1] == p3[1] == 0
+
+def event_finder(event1, event2, Q): 
+    for i in range(len(Q)):
+        if type(Q[i][0]) == type([]):
+            if ( Q[i][0][:2] == [event1, event2] or Q[i][0][1:] == [event1, event2]):
+                return i
     
 def handle_circle(event, beachline, Edges, Q):
     # event := [[left, middle, right], middle.y] 
     left, middle, right = event[0] # TODO why event passed as tuples?
-    
+    y = event[1] #the sweepline position
     #Search for the exact index where the triple occurs    
-    ind = -1
-    for i in range(1, len(beachline)-2):
-        if beachline[i-1][0] == left and beachline[i][0] == middle\
-        and beachline[i+1][0] == right: 
-            ind = i
-            break
+    ind = search_beach(beachline, left, middle, right) + 1
         
     
-    #set the circle event for the two neighboring arcs to false
-    beachline[ind-1][1], beachline[ind+1][1] = False, False
+    # set the circle event for the two neighboring arcs to false
+    # remove them from the queue
+    if beachline[ind-1][1]:
+        beachline[ind-1][1] = False
+        i = event_finder(beachline[ind-1][0], beachline[ind][0], Q)
+        del Q[i]
+        
+    if beachline[ind+1][1]:
+        beachline[ind+1][1] = False
+        i = event_finder(beachline[ind][0],  beachline[ind+1][0], Q)
+        del Q[i]
+
+        
+        
     #Where the arc will vanish
     c = circumcenter(left, middle, right)
 
     #find the corresponding edge
-    ind_edg1 = find_first([left, middle], Edges)
-    ind_edg2 = find_first([middle, right], Edges)
-    if not ind_edg1 or not ind_edg2: return # TODO something wrong!
+    ind_edg1 = search_beach(Edges, [left, middle])
+    ind_edg2 = search_beach(Edges, [middle, right])
+    if not ind_edg1 or not ind_edg2: return  beachline, Edges, Q # TODO something wrong!
 
     
     # Set end points for the edges between left and middle, middle and right      
@@ -452,15 +487,19 @@ def handle_circle(event, beachline, Edges, Q):
     
     
     try: # we may not always have enough number of edges
+        # TODO the code here is not complete!
         left, right = beachline[ind-1], beachline[ind+1]
         left_left, right_right = beachline[ind-2], beachline[ind+2]
-        circle_even_init(left_left[0], left[0], right[0], Q)
-        circle_even_init(left[0], right[0], right_right[0], Q)
+        circle_even_init(left_left[0], left[0], right[0], y,  Q)
+        circle_even_init(left[0], right[0], right_right[0], y,  Q)
     except: pass
     # Finally, we remove the arc
     del beachline[ind]
-    
+    print("Beachline after removing an arc:")
+    print(beachline)
     return beachline, Edges, Q
+
+dis = lambda x, y: sqrt( (x[0]-y[0])**2 +  (x[1]-y[1])**2)
 
 def find_first(s, lis):
     """a typical element in lis is in the form [a, ....]
@@ -470,7 +509,20 @@ def find_first(s, lis):
     for i in range(len(lis)):
         if s == lis[i][0]: return i
        
-    
+
+def search_beach(M, *args):
+    """ let args = a1, a2, a3, ...
+        returns i where lis[i: len(args)] == a1, a2, a3, ...
+        aj := [aj1, aj2, ...]"""
+        
+    lis = [arg for arg in args]
+    if type(lis[0]) != type([]): lis = [lis]
+    n = len(lis)
+    for i in range(len(M) - n):
+        M_mod = [m[0] for m in M[i:i+n]]
+        if M_mod == lis: 
+            return i
+
     
 if __name__ == '__main__':
     #test sties
