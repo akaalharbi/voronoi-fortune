@@ -81,29 +81,13 @@ def check_circle_event( l, m, r, y0):
           """
     
     
-    
-    
-#    if collinear(l, m, r): return False 
-#    c = circumcenter(l, m, r)
-#    y  = c[1]
-#    y0 = max(l[1], m[1], r[1])
-#    radius_sq = (c[0] - l[0])**2   + (c[1] - l[1])**2
-#    #the y-coordinate of project(c) onto the sweepline is l[1]
-#    #the lowestpoint b = c + radius is above/on y = l[1] iff
-#    #c[1] + radius <= l[1] <==> radius_sq <= (l[1] - c[1])**2
-#    
-#    if radius_sq >= (l[1] - c[1])**2 : #the y-coordinate
-#        return c
-    
-    #else:
-#    if y >= y0: return c
-#    return False
     if collinear(l, m, r): return False
     ax, ay = l
     bx, by = m
     cx, cy = r
     
-    # check if bc is a "right turn" from 
+    # check if bc is a "right turn" from
+    # Details?!
     if ((by - ay)*(cx - ax) - (cy - ay)*(bx - ax)) > 0: return False
     c = circumcenter(l, m, r) 
     radius   = sqrt((c[0] - m[0])**2   + (c[1] - m[1])**2)
@@ -113,13 +97,58 @@ def check_circle_event( l, m, r, y0):
         return upper_point[1]
 
 
+def check_circle_event2( ind, y0, beachline, Q):
+    """ 
+    Check: review
+    l or r are the last found site. There will be a site event iff the
+    lowest point of the circle that touches l , right, left is below/on
+    the sweepline. In our case, we assume the sweep-line just touched p.
+    y0 is the directrix.
+
+    Note: This method will cover also the case where the vertical line,
+    from p to the  beachline, touches a breakpoint.
+    --------------------
+    INPUT: left, middle, right = [xl yl], [xm, ym], [xr, yr]
+          """
+    
+    if ind == 0 or ind == len(beachline) -1 : 
+        return  beachline, Q # no possible circle event
+    l, m, r = beachline[ind-1][0], beachline[ind][0], beachline[ind+1][0] 
+    
+    if collinear(l, m, r): 
+        return  beachline, Q # no possible circle event
+
+    lx, ly = l
+    mx, my = m
+    rx, ry = r    
+    # check if bc is a "right turn" from
+    # Details?!
+    if ((my - ly)*(rx - lx) - (ry - ly)*(mx - lx)) > 0: 
+        return  beachline, Q # no possible circle event
+
+    c = circumcenter(l, m, r) 
+
+    radius   = sqrt((c[0] - m[0])**2   + (c[1] - m[1])**2)
+    upper_point = [c[0], radius+c[1]]
+    
+    if upper_point[1] < y0: 
+        return  beachline, Q # no possible circle event
+    
+    print("Circle event has been detected : left")
+    beachline[ind][1] = True
+    #event_to_add = beachline[ind][0][:] #deepcopy
+    Q.append([[l, m, r], upper_point[1]]) 
+    print([[l, m, r], upper_point[1]])
+    return  beachline, Q # circle event
+
+
 def search_edge(Edges, x_pos):
     #TODO: the list is an ordered list, use this fact!
     """ Check: ok
         INPUT:
         Edges as in the preamble
         site = site_event
-       OUTPUT: the index of the edge that lies after x_pos or exactly at it.
+        OUTPUT: the index of the edge that lies after x_pos or exactly at it.
 
        arc_1 | arc_2 | arc_3 | ... | arc_n
                  ^
@@ -230,7 +259,7 @@ def vertical_intersection(parabola, point):
     passes through point,  and the parabola.
     --------------------
     INPUT: pi = [xi, yi] """
-
+    # TODO a special case when py = y0 i.e. two sites have the same y-coordinate
     px, py = parabola # unpack them
     x0, y0 = point
     return ( (px-x0)**2+ py**2   - y0**2)/( 2*(py - y0) )
@@ -297,7 +326,7 @@ def vor_diag(sites):
         print(Q)
         print("-----------------------------------")
         event = Q.pop(0) #Q = [a, b, c] --> event = a ,   Q = [b, c]
-        if event == [-17, 76]: 
+        if event == [-27, -69]: 
             print("pay attention to me!")
         if type(event[0]) != type([]):
             print("Handling the site event  ")
@@ -378,13 +407,14 @@ def handle_site(event, beachline, Edges, Q, check = False):
 
     
     # Is there a false alarm?
-    if arc_above[-1]:
-        print("I discovered a false alarm at: ")
-        print(arc_above)
-        beachline[ind][1]= False
-        i = event_finder2(beachline[ind-1][0], beachline[ind][0],  beachline[ind+1][0], Q)
-        print("I am going to delete it from the Q")
-        del Q[i]
+    beachline, Q = false_alarm(ind, beachline, Q)
+#    if arc_above[-1]:
+#        print("I discovered a false alarm at: ")
+#        print(arc_above)
+#        beachline[ind][1]= False
+#        i = event_finder2(beachline[ind-1][0], beachline[ind][0],  beachline[ind+1][0], Q)
+#        print("I am going to delete it from the Q")
+#        del Q[i]
     # No needs to maintain the circle_event flag
     arc_above = arc_above[0] # = [x_p, y_p]
     
@@ -411,33 +441,37 @@ def handle_site(event, beachline, Edges, Q, check = False):
     beachline.insert(ind+2, [arc_above, False]) #arc_above ::= [focal, false]
     
     # ---- Checking for circle events -----
-    c = False # default value
-    if len(beachline[ind:]) >= 4: # do we have enough arcs for a circle event
-        m, r, y0  =  beachline[ind+2][0],beachline[ind+3][0], event[1]
-        c = check_circle_event(event, m, r, y0)
-    
-    # a circle event has been detected
-    if c:
-        print("Circle event has been detected : left")
-        beachline[ind+2][1] = True
-        #event_to_add = beachline[ind+2][0][:] #deepcopy
-        Q.append([[event, m, r], c]) 
-        print([[event, m, r], c])
+    y0 = event[1]
+    beachline, Q = check_circle_event2(ind+2, y0, beachline, Q)
+#   c = False # default value
+#    if len(beachline[ind:]) >= 4: # do we have enough arcs for a circle event
+#        m, r, y0  =  beachline[ind+2][0],beachline[ind+3][0], event[1]
+#        c = check_circle_event(event, m, r, y0)
+#    
+#    # a circle event has been detected
+#    if c:
+#        print("Circle event has been detected : left")
+#        beachline[ind+2][1] = True
+#        #event_to_add = beachline[ind+2][0][:] #deepcopy
+#        Q.append([[event, m, r], c]) 
+#        print([[event, m, r], c])
     
     #chekc whe event is the right most
-    c = False  # we forgot adding this!
-    if len(beachline[:ind+1]) >= 2: # do we have enough arcs for a circle event
-        l, m, y0  =  beachline[ind-1][0], beachline[ind][0], event[1]
-        c = check_circle_event(l, m, event, y0)
+    beachline, Q = check_circle_event2(ind, y0, beachline, Q)
 
-    if c:
-        print("Circle event has been detected: right")
-        
-        beachline[ind][1] = True
-        l, m, r =beachline[ind-1][0] , beachline[ind][0], beachline[ind+1][0]
-        print(l, m, r, c)
-        Q.append([[l, m, r], c]) 
-
+#    c = False  # we forgot adding this!
+#    if len(beachline[:ind+1]) >= 2: # do we have enough arcs for a circle event
+#        l, m, y0  =  beachline[ind-1][0], beachline[ind][0], event[1]
+#        c = check_circle_event(l, m, event, y0)
+#
+#    if c:
+#        print("Circle event has been detected: right")
+#        
+#        beachline[ind][1] = True
+#        l, m, r =beachline[ind-1][0] , beachline[ind][0], beachline[ind+1][0]
+#        print(l, m, r, c)
+#        Q.append([[l, m, r], c]) 
+#
 
     
     return beachline, Edges, Q
@@ -472,37 +506,76 @@ def event_finder2(e1, e2, e3, Q):
         if type(Q[i][0]) == type([]) and Q[i][0] == [e1, e2, e3] :
                 return i
     
+
+def false_alarm(ind, beachline, Q):
+    """ if beachline[ind] has a circle event, remove it from Q and set it to 
+        false.
+        INPUT: As in the preamble
+        """
+    
+    if not beachline[ind][1]: return beachline, Q
+    
+    # set the circle event for the two neighboring arcs to false
+    # remove them from the queue
+    print("I discovered a false alarm at: ")
+    print(beachline[ind])
+    beachline[ind][1] = False
+    i = event_finder2(beachline[ind-1][0], beachline[ind][0], beachline[ind+1][0], Q)
+    if i == None: 
+        print("something wrong happened while looking for an event in Q")
+        i = event_finder(beachline[ind-1][0], beachline[ind][0], Q)
+    print("I am going to delete it from the Q")
+    print("Q  was before  possible deletion of an arc" )
+    print(Q)
+    del Q[i]
+    return beachline, Q
     
 def handle_circle(event, beachline, Edges, Q):
-    # event := [[left, middle, right], middle.y] 
+    """ 
+    INPUT: 
+        event = [[left, middle, right], y]
+        left, middle, right are consecutive arcs in the beachline
+        y indicates the position of the sweep line and where middle will 
+        disappear. 
+        
+    OUTPUT: beachline, Edges, Q
+    Summary:
+        - unpack the elements and find 'middle' position in the beachline
+        - Check if left or right has a circle event. If so, change it to False
+          and remove it from Q.
+        - Add end points for the edges between left, middle and middle, right
+        - Add a new edge which starts add at the end point of left, middle and 
+          middle, right
+        - Finally, check for circle events for left left, left, right and  
+          left, right, right right.
+    """
     
+    # event := [[left, middle, right], middle.y] 
     
     left, middle, right = event[0] # TODO why event passed as tuples?
     print(left, middle, right)
     y = event[1] #the sweepline position
     #Search for the exact index where the triple occurs    
-    try: 
-        ind = search_beach(beachline, left, middle, right) + 1
-    except:
-        print("Error while handling a cirlce event")
-        print(event)
-        ind = search_beach(beachline, left, middle, right) + 1
-    
+    ind = search_beach(beachline, left, middle, right) + 1
+
+    # TODO shorten this code    
     # set the circle event for the two neighboring arcs to false
     # remove them from the queue
-    if beachline[ind-1][1]:
-        print("I discovered a false alarm at: ")
-        print(beachline[ind-1])
-        beachline[ind-1][1] = False
-        i = event_finder2(beachline[ind-2][0], beachline[ind-1][0], beachline[ind][0], Q)
-        if i == None: 
-            print("something wrong happened while looking for an event in Q")
-            i = event_finder(beachline[ind-1][0], beachline[ind][0], Q)
-        print("I am going to delete it from the Q")
-        print("Q  was before  possible deletion of an arc" )
-        print(Q)
-
-        del Q[i]
+    # added false alarm
+    beachline, Q = false_alarm(ind-1, beachline, Q)
+#    if beachline[ind-1][1]:
+#        print("I discovered a false alarm at: ")
+#        print(beachline[ind-1])
+#        beachline[ind-1][1] = False
+#        i = event_finder2(beachline[ind-2][0], beachline[ind-1][0], beachline[ind][0], Q)
+#        if i == None: 
+#            print("something wrong happened while looking for an event in Q")
+#            i = event_finder(beachline[ind-1][0], beachline[ind][0], Q)
+#        print("I am going to delete it from the Q")
+#        print("Q  was before  possible deletion of an arc" )
+#        print(Q)
+#
+#        del Q[i]
         
     #Add a new edge # TODO check 
     p_l, p_r = beachline[ind-1][0], beachline[ind+1][0]
@@ -510,18 +583,19 @@ def handle_circle(event, beachline, Edges, Q):
     
     Edges.append([[p_l, p_r], [s, None]])
     
-    
-    if beachline[ind+1][1]:
-        print("I discovered a false alarm at: ")
-        print(beachline[ind+1])
+    beachline, Q = false_alarm(ind+1, beachline, Q)
 
-        beachline[ind+1][1] = False
-        i = event_finder2(beachline[ind][0],  beachline[ind+1][0], beachline[ind+2][0], Q)
-        if  i == None: 
-            print("something wrong happened while looking for an event in Q")
-
-        print("I am going to delete it from the Q")
-        del Q[i]
+#    if beachline[ind+1][1]:
+#        print("I discovered a false alarm at: ")
+#        print(beachline[ind+1])
+#
+#        beachline[ind+1][1] = False
+#        i = event_finder2(beachline[ind][0],  beachline[ind+1][0], beachline[ind+2][0], Q)
+#        if  i == None: 
+#            print("something wrong happened while looking for an event in Q")
+#
+#        print("I am going to delete it from the Q")
+#        del Q[i]
 
         
         
@@ -546,37 +620,45 @@ def handle_circle(event, beachline, Edges, Q):
     #fix the indices
     print("We added two end points!")
     print(Edges[ind_edg1], Edges[ind_edg2] )
-    left, right = beachline[ind-1], beachline[ind+1]
-    print("I am going to check if there are other circle events")
-    try: # we may not always have enough number of edges
-        # TODO the code here is not complete!
-        
-        left_left,  = beachline[ind-2], 
-        c = check_circle_event(left_left[0], left[0], right[0], y)
+    print("farewell to the dedicated arc :( ")
 
-        if c:
-            print("Circle event has been detected: left")
-            beachline[ind-1][1] = True
-            print(left_left[0], left[0], right[0], c)
-            Q.append([[left_left[0], left[0], right[0]], c]) 
-
-            
-    except: pass
-        
-    try: 
-        right_right = beachline[ind+2]
-        c = check_circle_event(left[0], right[0], right_right[0], y)
-        
-        if c:
-            print("Circle event has been detected: left")
-            beachline[ind+1][1] = True
-            print(left[0], right[0], right_right[0], c)
-            Q.append([[left[0], right[0], right_right[0]], c])
-    except: pass
-
-    # Finally, we remove the arc
-    print("farewell to the dedicated arc ;( ")
+    # indices: ind-2     (ind-1)  ind   ind+1    ind+2
+    #        (left left)  left   event  right (right right)
     del beachline[ind]
+    # After deletion:    
+    i_left, i_right = ind-1, ind
+    beachline, Q = check_circle_event2(i_left, y, beachline, Q)
+    beachline, Q = check_circle_event2(i_right, y, beachline, Q)
+#    left, right = beachline[ind-1], beachline[ind+1]
+#    print("I am going to check if there are other circle events")
+#    try: # we may not always have enough number of edges
+#        # TODO the code here is not complete!
+#        
+#        left_left,  = beachline[ind-2], 
+#        c = check_circle_event(left_left[0], left[0], right[0], y)
+#
+#        if c:
+#            print("Circle event has been detected: left")
+#            beachline[ind-1][1] = True
+#            print(left_left[0], left[0], right[0], c)
+#            Q.append([[left_left[0], left[0], right[0]], c]) 
+#
+#            
+#    except: pass
+#        
+#    try: 
+#        right_right = beachline[ind+2]
+#        c = check_circle_event(left[0], right[0], right_right[0], y)
+#        
+#        if c:
+#            print("Circle event has been detected: left")
+#            beachline[ind+1][1] = True
+#            print(left[0], right[0], right_right[0], c)
+#            Q.append([[left[0], right[0], right_right[0]], c])
+#    except: pass
+#
+#    # Finally, we remove the arc
+
     return beachline, Edges, Q
 
 dis = lambda x, y: sqrt( (x[0]-y[0])**2 +  (x[1]-y[1])**2)
@@ -608,6 +690,7 @@ def search_beach(M, *args):
     
 if __name__ == '__main__':
     #test sties
+    from random import randint
     sites = [[-23, -15], [-10, -12], [-27, -69], [-69, -96], [74, 44], [84, -88], [95, 85], [-77, -42], [17, -65], [35, 12], [62, -8], [59, -85], [-17, 76], [-78, -55], [34, -68], [97, 55], [34, 95], [-98, -51], [-5, 57], [62, -50], [-77, -99], [3, -2], [-81, -18], [-49, 77], [56, 26], [61, -42], [-56, 35], [19, 57], [18, 4], [-81, 83]]
 
     #seg = vor_diag(sites)
