@@ -90,6 +90,14 @@ def event_finder2(e1, e2, e3, Q):
 ###############################################################################
 #------------------------Geometric Functions----------------------------------#
 
+def parabola (p, y0):
+    """
+    p is the focal, y0 is the directrix"""
+    
+    x1, y1 = p
+    return lambda x: ((x-x1)**2 + y1**2 - y0**2) / 2*(y1-y0)
+
+
 def parabolas_intersection(p1, p2, y0):
 
     """
@@ -442,12 +450,13 @@ def handle_circle(event, beachline, Edges, Q):
 
         
     #Add a new edge # TODO check 
-    p_l, p_r = beachline[ind-1][0], beachline[ind+1][0]
-    s = parabolas_intersection(p_l, p_r, y)    
-    Edges.append([[p_l, p_r], [s, None]])        
-        
-    #Where the arc will vanish
+#    p_l, p_r = beachline[ind-1][0], beachline[ind+1][0]
+#    a, b, disc = parabolas_intersection(p_l, p_r, y)    
+#    s_x = (a+sqrt(disc))/b
+#    s_y = (parabola(p_l,y))(s_x) 
     c = circumcenter(left, middle, right)
+    Edges.append([[left, right], [c, None]])        
+        
 
     # find the corresponding edge
     ind_edg1 = search_beach(Edges, [left, middle])
@@ -491,4 +500,12 @@ if __name__ == '__main__':
     #print("------------------------------- \n sites reversed \n")
     #print(sites)
     #print("----------------------------")
-    seg = voronoi_diagram(sites)
+    segments = voronoi_diagram(sites)
+    
+    #storing the line segments in a file called edges
+    complete_edges = [edge[1] for edge in segments if edge[-1] == True ]
+    with open("edges", 'w') as edges:
+        for e in complete_edges:
+            string = str(e[0][0]) + " " + str(e[0][1]) + " "\
+                    + str(e[1][0]) + " " + str(e[1][1])
+            edges.write(string+"\n")
