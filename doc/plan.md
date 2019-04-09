@@ -22,7 +22,7 @@ ___
 
 ____
 ## Implementing the algorithm in Coq
-`Deadline:` ** 23:59, 14th-April ** . 
+`Deadline:` **23:59, 14th-April** . 
 
 1. **Tuesday 9-April**   : Main goal, redesign the data structure. Bonus, add notations. 
 2. **Wednesday** : Main goal, handle_site_event. Bonus, decompose circumcenter definition.
