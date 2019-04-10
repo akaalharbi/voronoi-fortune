@@ -51,8 +51,8 @@ Check fst.
 Definition point          : Type := (R * R)%type.
 Definition Point(x y : R) : point := (x, y).
 
-Notation "p .x" := (fst p) ( at level 80). 
-Notation "p .y" := (snd p) ( at level 80). 
+Notation "p .x" := (fst p) ( at level 60). 
+Notation "p .y" := (snd p) ( at level 60). 
 Check (Point 1%:R 2%:R).x .
 Check (Point 1%:R 2%:R).y .
 (* Order functions TODO put an apporpiate scope without messing other orders! *)
@@ -94,73 +94,119 @@ Eval compute in drop 3 [:: 1; 2; 4; 3; 5; 3]%nat.
 (* Else, we only need p and the fact that it's not a circle event. We assign *)
 (* the default value (0, 0) to  p_l and p_r in case of a site event.         *)
 (* y indicates where the event will occur, e.g. for a site event y == p.(y)  *)
-
-Definition event  : Type := ( point * point * point * R )%type.
-Definition Event  ( p_l  p_m  p_r : point) ( sweepline : R) : event :=
-                  ( p_l, p_m, p_r, sweepline).
+(* The reason that we added bool and R at the endpoint is not to break the   *)
+(* above notation where i.e. p.l and p.r                                     *)
+Definition event  : Type := ( bool * point * point * point * R )%type.
+Definition Event  (b : bool) ( p_m  p_l  p_r : point) ( sweepline : R) : event :=
+                  (b, p_l, p_m, p_r, sweepline).
 
 
 Notation "p .swp" := (snd p) ( at level 82).             (* Sweepline   *)
 Notation "p .r"   := (snd (fst p)) ( at level 82).       (* m{Right arc *)
-Notation "p .l"   := (snd (fst (fst p))) ( at level 82). (* Left arc}m  *)
-Notation "p .m"   := (fst (fst (fst p))) ( at level 82). (*   L}m{R     *)
-
+Notation "p .m"   := (snd (fst (fst p))) ( at level 82). (* Left arc}m  *)
+Notation "p .l"   := (snd (fst (fst (fst p)))) ( at level 82). (* Final point *)
+Notation "p .cir" := (fst (fst (fst (fst p)))) ( at level 82). (* Start point *)
+(*k This is an unfortunate notation *)
 Check e.l.
 
 (* Priority Queue   *) 
 (* Helper functions *)
 (* TODO define equality for events!  *)
 (* Dummy event for default values *)
-Definition nul_ev := Event (Point 0%:R 1%:R) (Point 2%:R 3%:R) 
+Definition nulEv := Event false (Point 0%:R 1%:R) (Point 2%:R 3%:R) 
                            (Point 4%:R 5%:R)  6%:R.
+Check nulEv. Check nulEv.cir. Check nulEv.m. Check nulEv.l. Check nulEv.r. 
+Check nulEv.swp. 
 
 Fixpoint push ( s : seq event) (e : event)  := 
   match s with 
   | [::] => [:: e]
   | h::t =>  if  ( geq (h.m)  (e.m) ) then (* The y-coordinate of the site *)
               e :: h :: t
-            else push t e
+             else push t e
   end.
-
-
-Definition pop   ( s : seq event) := ( head nul_ev s, drop 1 s).
+Definition pop   ( s : seq event) := ( head nulEv s, drop 1 s).
 (* `del` is identical to `rem` except it reverse the arguments' order *)
-Definition del   ( s : seq event) ( e : event ) : seq event := rem e s.
+(* Definition del   ( s : seq event) ( e : event ) : seq event := rem e s. *)
 Definition empty ( s : seq event) := if size s is 0 then true else false.
-Definition pqueue : Type  :=
-  ( seq event
+(* The events queue is simply an ordered seq *)
+
+(* The commented definition is rather pedantic and enforces unnatural writing 
+syle. *)
+(* Definition pqueue : Type  :=
+  ( seq event             (* ELEMENTS : noted as elm *)
   * (event -> seq event)  (* PUSH : It implicitly acts on a given seq e.g. s *)
   * (event *  seq event)  (* POP  : Highest priority element                 *)
   * (event -> seq event)  (* DEL  : Remove first occurence of x              *)
   *  bool                 (* EMPTY: true if it is empty else false           *)
   )%type.
-  
+Notation "p .empty" := ( snd p) ( at level 83).
+Notation "p .del"   := ( snd ( fst (p))) ( at level 83).
+Notation "p .pop "  := ( snd ( fst( fst (p)))) ( at level 83).
+Notation "p .push"  := ( snd ( fst ( fst( fst (p))))) ( at level 83).
+Notation "p .elm"   := ( fst ( fst ( fst( fst (p))))) ( at level 83).
+
+
 (* Sanity's checks *)
-Definition m := [:: nul_ev; nul_ev; nul_ev].
+Definition m := [:: nulEv; nulEv; nulEv].
 (* Goal forall a b : point, a <= b. *) 
 Check m. Check push  m. Check del m. Check pop m. Check del m. Check empty m.
 Goal False.
-have := eqseq [:: nul_ev; nul_ev; nul_ev; nul_ev]. simpl.
+have := eqseq [:: nulEv; nulEv; nulEv; nulEv]. simpl.
 Abort.
-Check [:: nul_ev; nul_ev; nul_ev; nul_ev] == nseq 4 nul_ev.
+Check [:: nulEv; nulEv; nulEv; nulEv] == nseq 4 nulEv.
+
 (* --------------- *)
 Definition PQueue ( s : seq event ) : pqueue  := 
                   ( s,  push s, pop s, del s, empty s ).
 
-Check PQueue m.
+Definition M := PQueue m.
+Check M.empty. Check M.del. Check M.pop. Check M.push. Check M.elm.
 
-
-(*---------------------------- Searching lists ------------------------------*)
+ *)
+ (*---------------------------- Searching lists ------------------------------*)
 (* - Check the seq.v from mathcomp *)
 
 
+Definition midpoint  ( p1 p2 : point) : point := 
+Point  ( ((p1.x)+(p2.x))/2%:R )   ( ((p1.y)+(p2.y))/(2%:R) )  .
+
+(* The directed vectro that originates from p1 and ends at p2 *) 
+Definition direction ( p1 p2 : point) : point := 
+Point ((p1.x)-(p2.x))   ((p1.y)-(p2.y)).
+
+Definition dot_prod ( p1 p2 : point) : R :=  (p1.x)*(p2.x) + (p1.y)*(p2.y).
+(* l : n . (x - x0) = 0 => n.x = n.x0, we keep n.x0 and n *) 
+
+Definition line (n p : point ) : R*point := 
+( dot_prod n p, n).
+
+Definition bisector ( p1 p2 : point) : R*point :=
+line (direction p1 p2) (midpoint p1 p2).
 
 
-(* Definition circumcenter  ( p1 p2 p3 : point): point :=
-(* TODO  What's wrong with the expression below ¯\_(ツ)_/¯ *)
-((1%:R/2%:R)*((( (p2.x)  +  (p3.x) )*( (p2.x)  -  (p3.x) ) + ( (p2.y)  +  (p3.y) )*( (p2.y)  -  (p3.y) ))*( (p1.y)  -  (p2.y) ) - (( (p1.x)  +  (p2.x) )*( (p1.x)  -  (p2.x) ) + ( (p1.y)  +  (p2.y) )*( (p1.y)  -  (p2.y) ))*( (p2.y)  -  (p3.y) ))/(( (p1.y)  -  (p2.y) )*( (p2.x)  -  (p3.x) ) - ( (p1.x)  -  (p2.x) )*( (p2.y)  -  (p3.y) ))) 
-((-1%:~R)/(2%:R)*((( (p2.x)  +  (p3.x) )*( (p2.x)  -  (p3.x) ) + ( (p2.y)  +  (p3.y) )*( (p2.y)  -  (p3.y) ))*( (p1.x)  -  (p2.x) ) - (( (p1.x)  +  (p2.x) )*( (p1.x)  -  (p2.x) ) + ( (p1.y)  +  (p2.y) )*( (p1.y)  -  (p2.y) ))*( (p2.x)  -  (p3.x) ))/(( (p1.y)  -  (p2.y) )*( (p2.x)  -  (p3.x) ) - ( (p1.x)  -  (p2.x) )*( (p2.y)  -  (p3.y) ))).
- *)
+Definition line_intersection  ( l1 l2 : R*point) : point :=
+  let a1 := ( fst ( snd l1 )) in
+  let b1 := ( snd ( snd l1 )) in
+  let a2 := ( fst ( snd l2 )) in
+  let b2 := ( snd ( snd l2 )) in
+  let c1 := -1*(fst l1)       in
+  let c2 := -1*(fst l2)       in
+  let x  := ( (c1*b2 - b1*c2) / (a1*b2 - b1*a2) ) in
+  let y  := ( (a1*c2 - c1*a2) / (a1*b2 - b1*a2) ) in
+  Point x y.
+
+
+Definition circumcenter ( p1 p2 p3 : point ) : point :=
+  let    midp1p2 := midpoint p1 p2 in
+  let    midp2p3 := midpoint p2 p3 in
+  let bisectp1p2 := bisector p1 p2 in
+  let bisectp2p3 := bisector p2 p3 in
+  line_intersection bisectp1p2 bisectp2p3 .
+ 
+
+
+
 (*-------------------------- Geometric Functions --------------------------- *)
 
 (* TODO Add a lemma states that this  (a + sqrtr disc) /b belongs to p1 and p2 curves*) 
@@ -223,48 +269,64 @@ Definition before (p1 p2 p : point) : bool*bool :=
   else (false, false).
 
 (* This data structe says that  *)
-Record arc_ind : Type := Arc_ind { ind1 : nat; ind2 : nat; both : bool}.
-Check Arc_ind 1 2 true .
+Definition arc_ind : Type    := (nat * nat * bool ).
+Definition Arc_ind (ind1 ind2: nat) ( both : bool) : arc_ind := 
+                   (ind1, ind2, both ).
+Notation "p .both" := (snd p) (at level 84).
+Notation "p .ind2" := (snd ( fst p)) (at level 84).
+Notation "p .ind1" := (fst ( fst p)) (at level 84).
+
+
+Eval compute in Arc_ind 1 2 true .
 Definition add_ind ( i1 i2 : arc_ind) := 
-Arc_ind (i1.(ind1) + i2.(ind1)) (i1.(ind2) + i2.(ind2))
-        (orb i1.(both)  i2.(both)) .
+  Arc_ind ((i1.ind1) + (i2.ind1)) ( (i1.ind2) + (i2.ind2)) 
+    ( orb (i1.both)  (i2.both)).
 
 Definition test := Arc ( Point 1%:R 2%:R ) false. 
 Eval compute in add_ind (Arc_ind 1 2 true) (Arc_ind 1 2 false). 
 
 (* TODO start here ! *)
 
-Fixpoint search_veritcal (beachline  : seq arc) (q : point) : arc_ind := 
+Fixpoint search_veritcal (beachline  : seq arc) (q : point) {struct  beachline}
+: arc_ind := 
+
   let one  := Arc_ind 1 1 false in 
   let zero := Arc_ind 0 0 false in
-  match beachline with 
-  | [::] => zero |  h :: nil => zero
-  | p1 :: p2 :: t =>  
-      let b := before (p1.focal) (p2.focal) q in 
-      if b.1 && b.2 
-         then Arc_ind 1 2 true 
-      else if b.1 then Arc_ind 1 1 false
-      else add_ind one  (search_veritcal  ( p2 :: t)  q) (* TODO Something wrong *)
-   end. (*  Cannot guess decreasing argument of fix.
-            Solution 1: use measure one beachline size
-            Solution 2: Read CPDT!*)
- 
 
+  match beachline with
+  | [::] => zero 
+  |  h1 :: t => match t with (* two matches was the trick to avoid the error *)
+              | [::] => zero
+              | h2 :: t2 => 
+                            let b := before (h1.focal) (h2.focal) q in
+                            if (b.1) && (b.2) then Arc_ind 1 2 true 
+                            else if (b.1)     then Arc_ind 1 1 false
+                            else add_ind one  (search_veritcal   t  q )
+               end 
+   end. 
+
+ 
 (* Definition line_intersection(l1 l2 : point ) : point :=.
 (* TODO: Defines equality for points  *)
  *)
-Definition collinear ( p1 p2 p3 : point ): bool := false .  
-(*   if p1 == p2 || p2 == p3 || p3 == p1                     then true
-  else if  (p1.y)  ==  (p2.y)  ==  (p3.y)  == 0%:R              then true
-  else if  (p1.x) / (p1.y)  ==  (p2.x) / (p2.y)  ==  (p3.x) / (p3.y)  then true
+Definition collinear ( p1 p2 p3 : point ): bool :=   
+  if       (p1 == p2) || (p2 == p3) || (p3 == p1)       then true
+  else if  ( (p1.y)  ==  (p2.y) ) && ( (p2.y) ==  (p3.y) ) &&
+           ( (p3.y)  ==   0%:R  )                       then true
+  else if  ( ((p1.x) / (p1.y))  ==  ((p2.x) / (p2.y)) )    &&
+           ( ((p2.x) / (p2.y))  ==  ((p3.x) / (p3.y)) ) then true
   else false.
- *)  
+ 
 Definition nulArc := Arc (Point 1%:R 2%:R) false.
+Check 1%N.
 
+Definition is_empty T ( s : seq T) : bool := 
+match s with [::] => true | h::t => false end.
+Check is_empty.
 (*------------------------- Circle event helpers ------------------------ *)
 
 Definition check_circle_event ( ind : nat) ( y0 : R) (beachline : seq arc) 
-                              ( Q : PQueue) : (seq arc * PQueue) := 
+                              (Q : seq event) : ( (seq arc) * (seq event) ) := 
   let l := (nth nulArc beachline (ind -1)).focal in
   let m := (nth nulArc beachline (ind)).focal    in
   let r := (nth nulArc beachline (ind +1)).focal in
@@ -272,53 +334,58 @@ Definition check_circle_event ( ind : nat) ( y0 : R) (beachline : seq arc)
 (* TODO    The term "0" has type "nat" while it is expected to have type
  "bool".
  coq is flawless ಠ_ಠ *) 
-  if (ind == 0%nat || ind == (size beachline)-1 ) then 
-           (beachline, Q)
+  if  (ind == 0%N) || ( is_empty beachline )  then (beachline, Q)
   
   else if (collinear l m r) || 
-  (((m.(y) - l.(y))*(r.(x) - l.(x)) - (r.(y) - l.(y))*(m.(x) - l.(x))) > 0%:R)
-       then (beachline, Q)
-  else
-    let p = (m.l)                                         in
-    let c = circumcenter l m r                              in
-    let r = sqrtr ((c.(x) - p.(x))^2   + (c.(y) - p.(y))^2) in (* radius *)
-    let upper = r + c.(y)                                   in
-    if  upper < y0 then (beachline, Q)
-    else 
-      let update   := Arc m true                            in
-      let newBeach := set_nth nulArc beachline ind update   in
-      let newEvent := Event l m r m.(y)                     in 
-      let newQ     := prique (Q.(push) newEvent)            in
-          (newBeach, newQ).
+      ((( (m.y) - (l.y))*( (r.x) - (l.x)) - ( (r.y) - (l.y))*( (m.x) - (l.x)))
+       > 0%:R )
+     then (beachline, Q)
 
-    
-
-  
-
-Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : PQueue) :
-                       ( seq arc , PQueue) := 
-  current = nth nulArc s ind 
-  cond    = current.(circle)
-  if ~~ cond then  
-    (beachline, Q)
   else 
-    let update   := Arc current.focal true                  in
-    let newBeach := set_nth nulArc beachline ind update   in
-    let l_m_r := (nth nulArc beachline ind -1) (nth nulArc beachline ind )
-                 (nth nulArc beachline ind +1) (* TODO incomp *) in
-    let newQ     := rem l_m_r Q                           in
+       let c := circumcenter l m r                                   in
+       let rad := sqrtr ( ((c.x) - (m.x))^2   + ((c.y) - (m.y))^2 )  in
+       let upper := rad + (c.y)                                      in
+       if  upper < y0 then (beachline, Q)
+       else 
+            let update   := Arc m true                            in
+            let newBeach := set_nth nulArc beachline ind update   in
+            let newEvent := Event true l m r (m.y)                in 
+            let newQ     :=  (push Q newEvent)           in
+            (newBeach, newQ).
+
+
+Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
+                       (seq arc)* (seq event) := 
+  let current := nth nulArc beachline ind in
+  let cond    := (current.circle)         in
+  if (~~ cond) then  
+       (beachline, Q)
+  else 
+      let update   := Arc (current.focal) false                 in
+      let newBeach := set_nth nulArc beachline ind update       in
+      let left     := (nth nulArc beachline (ind -1)%N ).focal  in
+      let right    := (nth nulArc beachline (ind +1)%N ).focal  in
+      let mid      := (nth nulArc beachline ind ).focal         in
+      let l_m_r    := Event true mid left right (mid.y)         in
+      let newQ     := rem l_m_r Q                               in
      (newBeach, newQ).
 
 
+
+
 (*----------------------------   Main functions  -------------------------- *)
+(* TODO start here *)
 Definition voronoi_diagram (sites : seq point) : seq edge := .
 
 Definition special_case  :  :=.
-Definition handle_site_event ( e : event)  (beachline : seq arc)(edges : seq edge) 
-                             ( Q : PQueue )   :  :=
-                             .
+Definition handle_site_event ( e    : event   ) ( beachline : seq arc )
+                             (edges : seq edge) ( Q         : seq event) :
+                             ((seq arc) * ( seq edge) * ( seq event)):=
+  let  arc_above := search_veritcal beachline e in
+  if ( arc_above.1 ) ==  ( arc_above.2 ) then 
+      (* The special case doesn't affect the events queue *)
+      ( special_case ( arc_above.1 ) beachline edges ) Q
+  else 
+                                 .
 
-
-Definition handle_site_event ( e : event)  (beachline : seq arc)(edges : seq edge) 
-                             ( Q : PQueue )   : track :=
-                             if .
+Definition handle_circle_event : :=.
