@@ -75,7 +75,8 @@ Notation "p .circle" := (snd p) ( at level 81). (* Do I need to define another *
 Definition edge  : Type := (point * point * point * point * bool)%type.
 Definition Edge  (start final s_l s_r  : point ) ( c : bool) : edge :=
   (s_l, s_r, start, final, c).
-Definition e : edge := Edge (Point 1%:R 2%:R) (Point 1%:R 2%:R) 
+
+Definition nulEd : edge := Edge (Point 1%:R 2%:R) (Point 1%:R 2%:R) 
                             (Point 1%:R 2%:R) (Point 1%:R 2%:R) true.
 (* Translation rules from old notation to the new one                        *)
 (* a.(p_l) => a.l, a.(p_r) => a.r, a.(final) => a.fn, a.(start) => a.st      *) 
@@ -85,7 +86,7 @@ Notation "p .r"  := (snd (fst p)) ( at level 82).            (* p/Right site *)
 Notation "p .l"  := (snd (fst (fst p))) ( at level 82).      (* Left site/p  *)
 Notation "p .fn" := (snd (fst (fst (fst p)))) ( at level 82). (* Final point *)
 Notation "p .st" := (fst (fst (fst (fst p)))) ( at level 82). (* Start point *)
-Check e.l.
+
 
 
 Eval compute in drop 3 [:: 1; 2; 4; 3; 5; 3]%nat.
@@ -107,7 +108,7 @@ Notation "p .m"   := (snd (fst (fst p))) ( at level 82). (* Left arc}m  *)
 Notation "p .l"   := (snd (fst (fst (fst p)))) ( at level 82). (* Final point *)
 Notation "p .cir" := (fst (fst (fst (fst p)))) ( at level 82). (* Start point *)
 (*k This is an unfortunate notation *)
-Check e.l.
+
 
 (* Priority Queue   *) 
 (* Helper functions *)
@@ -231,9 +232,11 @@ Definition par_inter_m (p1 p2 : point) (y0 : R) : R :=
 
 Check par_inter_m.
 
-Definition vertical_intersection (par site : point)  := 
+Definition vertical_intersection (par site : point) : point := 
                (* par indicates a parabola  *)
-  ( ( (par.x)- (site.x))^2+ (par.y)^2   - (site.y)^2)/( (2%:R)*( (par.y) - (site.y))).
+  let y := ( ((par.x)- (site.x))^2+ (par.y)^2   - (site.y)^2)/( (2%:R)*( (par.y) - (site.y))) in
+  (Point (site.x) y).
+  
 Check andb.
 Locate "&&".
 
@@ -285,7 +288,7 @@ Definition add_ind ( i1 i2 : arc_ind) :=
 Definition test := Arc ( Point 1%:R 2%:R ) false. 
 Eval compute in add_ind (Arc_ind 1 2 true) (Arc_ind 1 2 false). 
 
-(* TODO start here ! *)
+
 
 Fixpoint search_veritcal (beachline  : seq arc) (q : point) {struct  beachline}
 : arc_ind := 
@@ -371,21 +374,135 @@ Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
      (newBeach, newQ).
 
 
+Fixpoint search_3  (p1 p2 p3 : point) (s : seq point) {struct s}: nat :=
+ (* TODO make it polymorphic                                                 *)
+ (* Given a sequence s, returns the index of p2 in s where p1 is perceded by *)
+ (* p1 and followed by p3.                                                   *)
+ (* Notice it returns a correct result if p1 p2 p3 are in s                  *)
+  match s with 
+  | h1 :: t => match t with 
+              | h2 :: t2  => match t2 with  (* The main case *)
+                             | h3 :: t3 => 
+                                          if (p1 == h1) && (h2 == p2) 
+                                             && (h3 == p3)           then 1%N
+                                          else 
+                                                (1+ (search_3  p1 p2 p3 t))%N
+                             |  _ => 0 (* p1 p2 p3 are not in s *)
+                             end       (* thus probably a wrong result *)
+              | _ => 0
+              end
+  | _ => 0
+  end. 
+
+
+Definition search_beach (p1 p2 p3 : point) ( beachline : seq arc): nat :=
+   let beachFocals := map (fun  x => x.focal) beachline in
+   search_3 p1 p2 p3 beachFocals.
+   
+
+Fixpoint insert T (a : T) (s : seq T) (i : nat)  : seq T :=
+  (* insert a into T at ith position *)
+  match i with 
+  | 0   => a  ::  s
+  | S n => match  s with 
+           | h :: t => h :: (insert  a t n) 
+           | _      =>  [:: a]
+           end
+           
+  end.
+
+Print truncC.
+
+Fixpoint remove T (i : nat) (s : seq T) : seq T :=
+  match i, s with 
+  | 0 , h::t  => t 
+  | 0 , _     => [::]
+  |S n, h::t => remove n t
+  | _ , _    => [::]
+  end.  
 
 
 (*----------------------------   Main functions  -------------------------- *)
-(* TODO start here *)
-Definition voronoi_diagram (sites : seq point) : seq edge := .
 
-Definition special_case  :  :=.
-Definition handle_site_event ( e    : event   ) ( beachline : seq arc )
+
+
+
+
+Definition search_edges (edges : seq edge) (p1 p2: point) : nat :=
+(* Given a list of edges, a left site p1, right site p2 then it returns the *) 
+(* the index where p1 p2 are the sites seperated by the edge                *)
+  let trunc_edges := map (fun x => ((x.l) , (x.r)) ) edges in
+  index (p1, p2) trunc_edges .
+
+Check search_edges.
+Definition special_case (ind       :     nat)   (p3    : point   ) 
+                        (beachline : seq arc)   (edges : seq edge)   : 
+                        (      seq arc      ) * (    seq edge    )   :=
+  
+  let p1       := (nth nulArc beachline ind).focal       in
+  let p2       := (nth nulArc beachline (ind+1)%N).focal in
+  let pos      := vertical_intersection p1 p3            in
+  let edg_ind  := search_edges edges p1 p2               in
+  let e1       := nth nulEd edges edg_ind                in
+  let e1Upd    := Edge (e1.st) pos (e1.l) (e1.r) true    in
+  let updEdges := set_nth nulEd edges edg_ind e1Upd      in
+  let e2       := Edge (pos) (pos) (p3) (p2) false       in
+  let e3       := Edge (pos) (pos) (p1) (p3) false       in
+  let newArc   := Arc (p3) false                         in
+  let newBeach := insert  newArc beachline (ind+1)%N     in
+  let newEdges := updEdges ++ [:: e2; e3]                in
+  
+  (newBeach, newEdges) .
+
+
+Definition handle_site_event ( p1   : point   ) ( beachline : seq arc )
                              (edges : seq edge) ( Q         : seq event) :
-                             ((seq arc) * ( seq edge) * ( seq event)):=
-  let  arc_above := search_veritcal beachline e in
-  if ( arc_above.1 ) ==  ( arc_above.2 ) then 
+                             ((seq arc) * ( seq edge) * ( seq event))    :=
+  let indices := search_veritcal beachline p1 in
+  let i       := indices.ind1                 in
+  if ( indices.both )  then 
       (* The special case doesn't affect the events queue *)
-      ( special_case ( arc_above.1 ) beachline edges ) Q
-  else 
-                                 .
+      (( special_case i p1 beachline edges ),  Q)
+  else  
+      let arc_above := (nth nulArc beachline i).focal          in
+      let check     := (false_alarm i beachline Q)             in
+      let chBeach   := (check.1)                               in
+      let chQ       := (check.2)                               in
+      let pos       := vertical_intersection arc_above p1      in
+      let e1        := Edge (pos) (pos) (p1) (arc_above) false in
+      let e2        := Edge (pos) (pos) (arc_above) (p1) false in
+      let newEdges  := edges ++ [:: e1; e2]                    in
+      let newArc    := Arc p1 false                            in
+      let up1B      := insert newArc beachline (i+1)%N         in
+      let up2B      := insert (Arc p1 false) up1B (i+1)%N      in
+      let y0        := p1.y                                    in
+      let BeaQ_l    := check_circle_event i y0 up2B chQ        in
+      let B_l       := (BeaQ_l.1)   in  let Q_l := (BeaQ_l.2)  in
+      let BeaQ_r    := check_circle_event (i+2)%N y0 B_l Q_l   in
+      let newBeach  := BeaQ_r.1                                in
+      let newQ      := BeaQ_r.2                                in
+      (newBeach, newEdges, newQ) .
+Check (Point (1%:R ) (1%:R )) == (Point (1%:R ) (1%:R )).
 
-Definition handle_circle_event : :=.
+
+Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
+                               (edges : seq edge) (Q         : seq event) :
+                                ((seq arc) * ( seq edge) * ( seq event))  :=
+  let y0 := ev.swp                   in
+  let l  := ev.l  in
+  let m  := ev.m in
+  let r  :=  ev.r in
+  let c  := circumcenter l m r in 
+  let e1 := Edge (c) (c) (l) (r) false in  
+  let e_ind_l_m  := search_edges edges l m               in
+  let e_ind_m_r  := search_edges edges m r               in
+  let e_l_m  := (nth nulEd edges e_ind_l_m)               in
+  let e_m_r  := (nth nulEd edges e_ind_m_r)           in
+  let e_l_m' := Edge (e_l_m.st) (c) (e_l_m.l) (e_l_m.r)  in (* put an end *)
+  let e_m_r' := Edge (e_m_r.st) (c) (e_m_r.l) (e_m_r.r)  in (* put an end *)
+  let i      := search_beach l m r in  
+  let beach' := remove i beachline  in 
+  (* TODO start here *)
+.  
+  
+Definition voronoi_diagram (sites : seq point) : seq edge := .
