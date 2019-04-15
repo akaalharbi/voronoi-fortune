@@ -24,10 +24,13 @@ I was able to translate the python code to coq. It was, mostly, a straightforwar
 
 ### Statistics
 
-|lang|Duration|insertions| avg | Deletions | avg | total | avg |
-|    :---: |     |      ------:          |               |                  |               |          |              |
-|`python`| 12 days | 1741      |    145.1            |      1113      |       92 .75        |       628        |  52.3 |
-|`coq`     |   7 days |   1004        |        143.43        |         495         |   70.71 | 509   |      72.71   |
+**Unit: number of lines**
+
+lang|Duration|insertions| avg | Deletions | avg | total | avg 
+----|--------|----------|-----|-----------|-----|-------|-----
+`python`| 12 days | 1741 | 145.1 | 1113 | 92 .75 | 628 | 52.3 
+`coq` | 7 days | 1004 | 143.43 | 495 | 70.71 | 509 | 72.71
+
 
 
 If we assume that the proof is 10 times larger than the program, and the proofs writing speed lies between 52.3-72.71 *lines/day*, then one expects this to be done in sometime between 70 working days and 120 working days. In reality, it might take longer as I did not need to search about python syntax while implementing the algorithm.
