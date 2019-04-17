@@ -1,4 +1,5 @@
 From mathcomp Require Import all_ssreflect all_algebra all_field.
+Require Import QArith.
 From Coq Require Extraction.
 
 Import GRing.Theory Num.Theory Num.ExtraDef.
@@ -84,7 +85,9 @@ Definition less (p1 p2 : point) : bool :=
 (* Arc *)
 Definition arc   : Type := (point * bool)%type.
 Definition Arc (p: point) ( c : bool) : arc := (p, c).
-Notation "p .focal"  := (fst p) ( at level 81).  (* same as p.x *)
+Definition focal (p : arc) := fst p.
+
+Notation "p .focal"  := (focal p) ( at level 81).  (* same as p.x *)
 Notation "p .circle" := (snd p) ( at level 81). (* Do I need to define another *)
                                             (* fst, so focal & x are disjoint?*) 
 
@@ -118,10 +121,10 @@ Fixpoint push (e : event) ( s : seq event) : seq event   :=
   | [::] => [:: e]
   | h::t =>  if  ( geq (h.m)  (e.m) ) then (* The y-coordinate of the site *)
               e :: h :: t
-             else push e t
+             else h :: push e t
   end.
 Definition pop   ( s : seq event) := ( head nulEv s, drop 1 s).
-Definition empty ( s : seq event) := if size s is 0 then true else false.
+Definition empty ( s : seq event) := if size s is 0%nat then true else false.
 
 
 (* Arc_ind  *)
@@ -163,7 +166,7 @@ Definition emB  : seq arc   := [::]. (* Empty beachline      *)
 Fixpoint insert T (a : T) (s : seq T) (i : nat)  : seq T :=
   (* insert a into T at ith position *)
   match i with
-  | 0   => a  ::  s
+  | 0%nat   => a  ::  s
   | S n => match  s with 
            | h :: t => h :: (insert  a t n)
            | _      =>  [:: a]
@@ -171,9 +174,9 @@ Fixpoint insert T (a : T) (s : seq T) (i : nat)  : seq T :=
   end.
 
 Fixpoint remove T (i : nat) (s : seq T) : seq T :=
-  match i, s with 
-  | 0 , h::t  => t 
-  | 0 , _     => [::]
+  match i, s with
+  | 0%nat , h::t  => t
+  | 0%nat , _     => [::]
   |S n, h::t => remove n t
   | _ , _    => [::]
   end.  
@@ -189,9 +192,9 @@ Fixpoint search_3  (p1 p2 p3 : point) (s : seq point) {struct s}: nat :=
               | h2 :: t2  => match t2 with  (* The main case *)
                              | h3 :: t3 => 
                                           if (p1 === h1) && (h2 === p2)
-                                             && (h3 === p3)         then 1%N
+                                             && (h3 === p3)         then 1%nat
                                           else 
-                                                (1+ (search_3  p1 p2 p3 t))%N
+                                                (1+ (search_3  p1 p2 p3 t))%nat
                              |  _ => 0 (* p1 p2 p3 are not in s *)
                              end       (* thus probably a wrong result *)
               | _ => 0
@@ -388,13 +391,13 @@ Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
   if (~~ cond) then
        (beachline, Q)
   else
-      let update   := Arc (current.focal) false                 in
-      let newBeach := set_nth nulArc beachline ind update       in
-      let left     := (nth nulArc beachline (ind -1)%N ).focal  in
-      let right    := (nth nulArc beachline (ind +1)%N ).focal  in
-      let mid      := (nth nulArc beachline ind ).focal         in
-      let l_m_r    := Event true mid left right (mid.y)         in
-      let newQ     := filter (fun x =>  ~~ event_eq x l_m_r) Q   in
+      let update   := Arc (current.focal) false                    in
+      let newBeach := set_nth nulArc beachline ind update          in
+      let left     := (nth nulArc beachline (ind -1)%nat ).focal   in
+      let right    := (nth nulArc beachline (ind +1)%nat ).focal   in
+      let mid      := (nth nulArc beachline ind ).focal            in
+      let l_m_r    := Event true mid left right (mid.y)            in
+      let newQ     := filter (fun x =>  ~~ event_eq x l_m_r) Q     in
      (newBeach, newQ).
 
 
@@ -405,18 +408,18 @@ Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
 Definition special_case (ind       :     nat)   (p3    : point   )
                         (beachline : seq arc)   (edges : seq edge)   :
                         (      seq arc      ) * (    seq edge    )   :=
-  let p1       := (nth nulArc beachline ind).focal       in
-  let p2       := (nth nulArc beachline (ind+1)%N).focal in
-  let pos      := vertical_intersection p1 p3            in
-  let edg_ind  := search_edges edges p1 p2               in
-  let e1       := nth nulEd edges edg_ind                in
-  let e1Upd    := Edge (e1.st) pos (e1.l) (e1.r) true    in
-  let updEdges := set_nth nulEd edges edg_ind e1Upd      in
-  let e2       := Edge (pos) (pos) (p3) (p2) false       in
-  let e3       := Edge (pos) (pos) (p1) (p3) false       in
-  let newArc   := Arc (p3) false                         in
-  let newBeach := insert  newArc beachline (ind+1)%N     in
-  let newEdges := updEdges ++ [:: e2; e3]                in
+  let p1       := (nth nulArc beachline ind).focal           in
+  let p2       := (nth nulArc beachline (ind + 1)%nat).focal in
+  let pos      := vertical_intersection p1 p3                in
+  let edg_ind  := search_edges edges p1 p2                   in
+  let e1       := nth nulEd edges edg_ind                    in
+  let e1Upd    := Edge (e1.st) pos (e1.l) (e1.r) true        in
+  let updEdges := set_nth nulEd edges edg_ind e1Upd          in
+  let e2       := Edge (pos) (pos) (p3) (p2) false           in
+  let e3       := Edge (pos) (pos) (p1) (p3) false           in
+  let newArc   := Arc (p3) false                             in
+  let newBeach := insert  newArc beachline (ind + 1)%nat     in
+  let newEdges := updEdges ++ [:: e2; e3]                    in
   (newBeach, newEdges).
 
 
@@ -431,23 +434,23 @@ Definition handle_site_event ( p1   : point   ) ( beachline : seq arc )
       (* The special case doesn't affect the events queue *)
       (( special_case i p1 beachline edges ),  Q)
   else
-      let arc_above := (nth nulArc beachline i).focal          in
-      let check     := (false_alarm i beachline Q)             in
-      let chBeach   := (check.1)                               in
-      let chQ       := (check.2)                               in
-      let pos       := vertical_intersection arc_above p1      in
-      let e1        := Edge (pos) (pos) (p1) (arc_above) false in
-      let e2        := Edge (pos) (pos) (arc_above) (p1) false in
-      let newEdges  := edges ++ [:: e1; e2]                    in
-      let newArc    := Arc p1 false                            in
-      let up1B      := insert newArc beachline (i+1)%N         in
-      let up2B      := insert (Arc p1 false) up1B (i+1)%N      in
-      let y0        := p1.y                                    in
-      let BeaQ_l    := check_circle_event i y0 up2B chQ        in
-      let B_l       := (BeaQ_l.1)   in  let Q_l := (BeaQ_l.2)  in
-      let BeaQ_r    := check_circle_event (i+2)%N y0 B_l Q_l   in
-      let newBeach  := BeaQ_r.1                                in
-      let newQ      := BeaQ_r.2                                in
+      let arc_above := (nth nulArc beachline i).focal            in
+      let check     := (false_alarm i beachline Q)               in
+      let chBeach   := (check.1)                                 in
+      let chQ       := (check.2)                                 in
+      let pos       := vertical_intersection arc_above p1        in
+      let e1        := Edge (pos) (pos) (p1) (arc_above) false   in
+      let e2        := Edge (pos) (pos) (arc_above) (p1) false   in
+      let newEdges  := edges ++ [:: e1; e2]                      in
+      let newArc    := Arc p1 false                              in
+      let up1B      := insert newArc beachline (i + 1)%nat       in
+      let up2B      := insert (Arc p1 false) up1B (i + 1)%nat    in
+      let y0        := p1.y                                      in
+      let BeaQ_l    := check_circle_event i y0 up2B chQ          in
+      let B_l       := (BeaQ_l.1)   in  let Q_l := (BeaQ_l.2)    in
+      let BeaQ_r    := check_circle_event (i + 2)%nat y0 B_l Q_l in
+      let newBeach  := BeaQ_r.1                                  in
+      let newQ      := BeaQ_r.2                                  in
       (newBeach, newEdges, newQ) .
 
 Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
@@ -469,7 +472,7 @@ Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
   let newEdges' := set_nth nulEd newEdges e_ind_m_r e_m_r'       in
   let i         := search_beach l m r beachline                  in
   let beach'    := remove i beachline                            in
-  let i_left    := (i-1)%N                                       in
+  let i_left    := (i - 1)%nat                                   in
   let i_right   := i%N                                           in
   let BeaQ_l    := check_circle_event i_left y0 beach' Q         in
   let B_l       := (BeaQ_l.1)   in  let Q_l := (BeaQ_l.2)        in
@@ -488,7 +491,7 @@ Fixpoint fortune  (n     :  nat    ) (beachline : seq arc  )
 
   match n, Q with
   | _    , [::] => (n, beachline, edges, Q)
-  | S n' , h::t => if (h.cir) then 
+  | S n' , h::t => if (h.cir) then
                        let res := handle_circle_event h beachline edges Q in
                        let edges' := snd (fst res)  in
                        let beach' := fst (fst res)  in
@@ -501,8 +504,28 @@ Fixpoint fortune  (n     :  nat    ) (beachline : seq arc  )
                        let Q'     := snd res        in
                        fortune n' beach' edges' Q'
 
-  | 0    , _    => (n, beachline, edges, Q)
+  | 0%nat , _    => (n, beachline, edges, Q)
   end.
+
+Lemma fortune_step n beachline edges Q : fortune n beachline edges Q =
+    match n, Q with
+  | _    , [::] => (n, beachline, edges, Q)
+  | S n' , h::t => if (h.cir) then
+                       let res := handle_circle_event h beachline edges Q in
+                       let edges' := snd (fst res)  in
+                       let beach' := fst (fst res)  in
+                       let Q'     := snd res        in
+                       fortune n' beach' edges' Q'
+                   else
+                       let res := handle_site_event (h.m) beachline edges Q in
+                       let edges' := snd (fst res)  in
+                       let beach' := fst (fst res)  in
+                       let Q'     := snd res        in
+                       fortune n' beach' edges' Q'
+
+  | 0%nat , _    => (n, beachline, edges, Q)
+  end.
+Proof. by case: n. Qed.
 
 Fixpoint init (s : seq point) (Q : seq event): seq event := 
   match s with 
@@ -513,10 +536,69 @@ Fixpoint init (s : seq point) (Q : seq event): seq event :=
 
 Definition main (s : seq point)  :=
   let Q := init s emQ              in
-  let n := ((size Q)*5)%N          in (* TODO Find an accurate upper bound *)
+  let n := ((size Q)*5)%nat        in (* TODO Find an accurate upper bound *)
   let res := fortune n emB emEd Q  in (* To add an extra box *)
   res.
   
 End ab1.
 
-Extraction "fortune.ml" main.
+Definition Qsqrt (a : Q) : Q:=
+  let n := Qnum a in let d := Zpos (Qden a) in
+  let d' := Z.sqrt (d * 2 ^ 64) in
+  let n' := Z.sqrt (n * 2 ^ 64) in
+  let g := Z.gcd n' d' in
+  let d'' := match (d' / g)%Z with Zpos d'' => d'' | _ => xH end in
+    ((n' / g) # d'').
+
+Compute Qsqrt (3 # 2)%Q.
+
+Definition Qexp (a : Q) (n : nat) :=
+  Qpower a (Z.of_nat n).
+
+Definition Qnatmul (a : Q) (n : nat) :=
+  inject_Z (Z.of_nat n) * a.
+
+Definition Qlt_bool (a b : Q) := Qle_bool a b && ~~ Qeq_bool a b.
+
+Definition main' := main (1 : Q)
+  Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool Qnatmul Qexp.
+
+Extract Inductive list => "list" [ "[]" "(::)" ].
+
+Extraction "fortune.ml" main'.
+
+Definition small_data := [:: ((-23)#1, (-15)#1)].
+
+Definition result :=  main' [:: ((-23)#1, (-15)#1)].
+
+Check snd (fst result) : seq (edge Q).
+Compute length result.1.2.
+Compute emEd.
+
+Definition handle_site_event' :=
+  handle_site_event (1 : Q) Qplus Qmult Qopp Qinv Qsqrt
+   Qeq_bool Qle_bool Qlt_bool Qnatmul Qexp.
+
+Definition init' := init Qeq_bool Qle_bool.
+
+Compute init' small_data nil.
+
+Lemma test : main' small_data = (0%nat, nil, nil, nil).
+rewrite /main' /main.
+rewrite fortune_step.
+rewrite -[(muln _ 5)%N]/5%nat; lazy iota; lazy beta.
+simpl init; lazy iota; lazy beta.
+simpl fst; lazy iota.
+have tmp : handle_site_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
+       Qlt_bool Qnatmul Qexp
+       (false, (-23 # 1, -15 # 1), (-23 # 1, -15 # 1)).2 
+       (emB Q) (emEd Q)
+       [:: Event false (-23 # 1, -15 # 1) (-23 # 1, -15 # 1)
+             (-23 # 1, -15 # 1) (-15 # 1)] = (nil, nil, nil).
+
+rewrite /handle_site_event.
+have tmp3 : (search_veritcal 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool
+       Qnatmul Qexp (emB Q) (false, (-23 # 1, -15 # 1), (-23 # 1, -15 # 1)).2) =
+  (0%nat, 0%nat, false) by [].
+rewrite tmp3.
+rewrite -[(0%nat, 0%nat, false).2]/false; lazy iota.
