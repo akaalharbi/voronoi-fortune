@@ -1,4 +1,5 @@
 From mathcomp Require Import all_ssreflect all_algebra all_field.
+From Coq Require Extraction.
 
 Import GRing.Theory Num.Theory Num.ExtraDef.
 
@@ -6,14 +7,29 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Locate ":>".
-
 
 Section ab1.
 
-Variable R : rcfType.
+Variables (R : Type) (one zero : R)
+  (add mul : R -> R -> R) (opp inv sqrtr : R -> R).
+Variables (eq ler ltr : R -> R -> bool) (natr_mul exp : R -> nat -> R).
 
-Open Scope ring_scope.
+
+Notation "x + y" := (add x y) : a_scope.
+Notation "x * y" := (mul x y) : a_scope.
+Notation "x - y" := (add x (opp y)) : a_scope.
+Notation "x / y" := (mul x (inv y)) : a_scope.
+Notation "x >= y" := (ler y x) : bool_scope.
+Notation "x <= y" := (ler x y) : bool_scope.
+Notation "x < y" := (ltr x y) : bool_scope.
+Notation "x > y" := (ltr y x) : bool_scope.
+Notation "x == y" := (eq x y) : bool_scope.
+Notation "x *+ n" := (natr_mul x n) : a_scope.
+Notation "x ^ n" := (exp x n) : a_scope.
+Notation "- x" := (opp x) : a_scope.
+Notation "n %:R" := (natr_mul one n) : a_scope.
+
+Open Scope a_scope.
 
 (*****************************************************************************)
 (* This file contains an implementation of Fortune's algorithm which follows *)
@@ -51,9 +67,12 @@ Definition point          : Type := (R * R)%type.
 Definition Point(x y : R) : point := (x, y).
 Notation "p .x" := (fst p) ( at level 60).
 Notation "p .y" := (snd p) ( at level 60).
-Check (Point 1%:R 2%:R).x .
-Check (Point 1%:R 2%:R).y .
 
+Definition point_eq (p1 p2 : point) : bool :=
+  (p1.x == p2.x) && (p1.y == p2.y).
+
+Notation "p1 === p2" := (point_eq p1 p2)
+  (at level 70, no associativity) : a_scope.
 
 Definition geq (p1 p2 : point ) : bool :=
   if (p1.y) >= (p2.y) then true 
@@ -93,7 +112,6 @@ Notation "p .l"   := (snd (fst (fst (fst p)))) ( at level 82). (* Final point *)
 Notation "p .cir" := (fst (fst (fst (fst p)))) ( at level 82). (* Start point *)
 (* cir  is an unfortunate notation *)
 
-
 (* Priority Queue *)
 Fixpoint push (e : event) ( s : seq event) : seq event   := 
   match s with 
@@ -119,7 +137,6 @@ Definition add_ind ( i1 i2 : arc_ind) :=
           ( orb (i1.both)  (i2.both)).
 Definition is_empty T ( s : seq T) : bool := 
   match s with [::] => true | h::t => false end.
-Check is_empty.
 
 (* ------------------------------ Nulls ------------------------------------ *) 
 Definition nulArc := Arc (Point 1%:R 2%:R) false.
@@ -131,7 +148,6 @@ Definition nulEd : edge := Edge (Point 1%:R 2%:R) (Point 1%:R 2%:R)
                                 (Point 1%:R 2%:R) (Point 1%:R 2%:R) true.
                                 
 Definition emEd : seq edge  := [::]. (* Empty list of edges *)
-Check emEd.
 
 Definition emQ  : seq event := [::]. (* Empty Queue of event *)
 
@@ -172,8 +188,8 @@ Fixpoint search_3  (p1 p2 p3 : point) (s : seq point) {struct s}: nat :=
   | h1 :: t => match t with 
               | h2 :: t2  => match t2 with  (* The main case *)
                              | h3 :: t3 => 
-                                          if (p1 == h1) && (h2 == p2) 
-                                             && (h3 == p3)           then 1%N
+                                          if (p1 === h1) && (h2 === p2)
+                                             && (h3 === p3)         then 1%N
                                           else 
                                                 (1+ (search_3  p1 p2 p3 t))%N
                              |  _ => 0 (* p1 p2 p3 are not in s *)
@@ -191,8 +207,7 @@ Definition search_beach (p1 p2 p3 : point) ( beachline : seq arc): nat :=
 Definition search_edges (edges : seq edge) (p1 p2: point) : nat :=
 (* Given a list of edges, a left site p1, right site p2 then it returns the *) 
 (* the index where p1 p2 are the sites seperated by the edge                *)
-  let trunc_edges := map (fun x => ((x.l) , (x.r)) ) edges in
-  index (p1, p2) trunc_edges .
+  find (fun x => (x.l === p1) && (x.r === p2)) edges.
 
 
 (* ========================== Geometric Functions ========================== *)
@@ -224,14 +239,14 @@ Definition line_intersection  ( l1 l2 : R*point) : point :=
   let b1 := ( snd ( snd l1 )) in
   let a2 := ( fst ( snd l2 )) in
   let b2 := ( snd ( snd l2 )) in
-  let c1 := -1*(fst l1)       in
-  let c2 := -1*(fst l2)       in
+  let c1 := -(fst l1)       in
+  let c2 := -(fst l2)       in
   let x  := ( (c1*b2 - b1*c2) / (a1*b2 - b1*a2) ) in
   let y  := ( (a1*c2 - c1*a2) / (a1*b2 - b1*a2) ) in
   Point x y.
 
 Definition collinear ( p1 p2 p3 : point ): bool :=   
-  if       (p1 == p2) || (p2 == p3) || (p3 == p1)       then true
+  if       (p1 === p2) || (p2 === p3) || (p3 === p1)       then true
   else if  ( (p1.y)  ==  (p2.y) ) && ( (p2.y) ==  (p3.y) ) &&
            ( (p3.y)  ==   0%:R  )                       then true
   else if  ( ((p1.x) / (p1.y))  ==  ((p2.x) / (p2.y)) )    &&
@@ -257,9 +272,15 @@ Definition a (p1 p2 : point) ( y0 : R) : R :=
 
 Definition b ( p1 p2 : point) ( y0 : R) : R := ( (p1.y)  -  (p2.y) ).
 
-Definition disc ( p1 p2 : point) ( y0 : R) : R := 
- sqrtr ( (2%:R) * (p1.y) ^2* (p2.y) ^2 +  (p1.y) * (p2.y) ^3 + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2 +  (p1.y) ^2 - (2%:R)* (p1.y) * (p2.y)  +  (p2.y) ^2)*y0^2 + ( (p1.y) ^3 + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2)* (p1.y) )* (p2.y)  - ( (p1.y) ^3 -  (p1.y) * (p2.y) ^2 +  (p2.y) ^3 + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2)* (p1.y)  + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2 -  (p1.y) ^2)* (p2.y) )*y0).
-Check disc.
+Definition disc ( p1 p2 : point) ( y0 : R) : R :=
+  sqrtr ( (2%:R) * (p1.y) ^2* (p2.y) ^2 +  (p1.y) * (p2.y) ^3 +
+  ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2 +
+  (p1.y) ^2 - (2%:R)* (p1.y) * (p2.y)  +  (p2.y) ^2)*y0^2 +
+  ( (p1.y) ^3 + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +
+  (p2.x) ^2)* (p1.y) )* (p2.y)  - ( (p1.y) ^3 -  (p1.y) * (p2.y) ^2 +
+  (p2.y) ^3 + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2)* (p1.y)
+  + ( (p1.x) ^2 - (2%:R)* (p1.x) * (p2.x)  +  (p2.x) ^2 -
+  (p1.y) ^2)* (p2.y) )*y0).
 
  
 Definition par_inter_p (p1 p2 : point) (y0 : R) : R := 
@@ -272,7 +293,6 @@ Definition par_inter_m (p1 p2 : point) (y0 : R) : R :=
   if  (p1.y)  ==  (p1.y)  then  (( (p1.x) + (p2.x) )/(2%:R)) 
   else ((a p1 p2 y0) - (disc p1 p2 y0))/(b p1 p2 y0) .
 
-Check par_inter_m.
 
 Definition vertical_intersection (par site : point) : point := 
   (* Given a point p1 and a parabola P above/below it.   *)
@@ -327,12 +347,13 @@ Fixpoint search_veritcal (beachline  : seq arc) (q : point) {struct  beachline}
 
 (* ----------------------------  event helpers ----------------------------- *)
 
+
 Definition check_circle_event ( ind : nat) ( y0 : R) (beachline : seq arc) 
                               (Q : seq event) : ( (seq arc) * (seq event) ) :=
   let l := (nth nulArc beachline (ind -1)).focal in
   let m := (nth nulArc beachline (ind)).focal    in
   let r := (nth nulArc beachline (ind +1)).focal in
-  if  (ind == 0%N) || ( is_empty beachline )  then (beachline, Q)
+  if  (eqn ind 0)%N || ( is_empty beachline )  then (beachline, Q)
   
   else if (collinear l m r) || 
       ((( (m.y) - (l.y))*( (r.x) - (l.x)) - ( (r.y) - (l.y))*( (m.x) - (l.x)))
@@ -351,6 +372,14 @@ Definition check_circle_event ( ind : nat) ( y0 : R) (beachline : seq arc)
             let newQ     :=  (push newEvent Q)           in
             (newBeach, newQ).
 
+Check (fun x : event =>  fst (fst (fst (fst x)))).
+
+Definition event_eq (e1 e2 : event) :=
+  (snd e1 == snd e2) &&
+  (snd (fst e1) === snd (fst e2)) &&
+  (snd (fst (fst e1)) === snd (fst (fst e2))) &&
+  ((snd (fst (fst (fst e1)))) === (snd (fst (fst (fst e2))))) &&
+  (eqb (fst (fst (fst (fst e1))))   (fst (fst (fst (fst e2))))).
 
 Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
                        (seq arc)* (seq event) := 
@@ -365,7 +394,7 @@ Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
       let right    := (nth nulArc beachline (ind +1)%N ).focal  in
       let mid      := (nth nulArc beachline ind ).focal         in
       let l_m_r    := Event true mid left right (mid.y)         in
-      let newQ     := rem l_m_r Q                               in
+      let newQ     := filter (fun x =>  ~~ event_eq x l_m_r) Q   in
      (newBeach, newQ).
 
 
@@ -421,9 +450,6 @@ Definition handle_site_event ( p1   : point   ) ( beachline : seq arc )
       let newQ      := BeaQ_r.2                                in
       (newBeach, newEdges, newQ) .
 
-Check (Point (1%:R ) (1%:R )) == (Point (1%:R ) (1%:R )).
-
-
 Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
                                (edges : seq edge) (Q         : seq event) :
                                ( (seq arc) * ( seq edge) * ( seq event) ) :=
@@ -478,8 +504,6 @@ Fixpoint fortune  (n     :  nat    ) (beachline : seq arc  )
   | 0    , _    => (n, beachline, edges, Q)
   end.
 
-Check fortune.
-
 Fixpoint init (s : seq point) (Q : seq event): seq event := 
   match s with 
   | h::t => let h_ev := Event false h h h (h.y) in
@@ -493,7 +517,6 @@ Definition main (s : seq point)  :=
   let res := fortune n emB emEd Q  in (* To add an extra box *)
   res.
   
-Check main.
-
-
 End ab1.
+
+Extraction "fortune.ml" main.
