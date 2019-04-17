@@ -9,6 +9,6 @@ Fortune's algorithm is a sweep line algorithm to construct the Voronoi diagram o
 	* [`progress `](doc/progress.md)  contains an overview of the small progress achieved over  short periods.
 	* [`resources`](doc/resources.md) a bibliography  for learning [Coq](https://coq.inria.fr/) and Fortune's algorithm.
 	*  [`plan`](doc/plan.md) high levle goals and their deadlines 
-
+	* [`proofs outlines`](doc/proofs-outlines.tex) a general for proving the correctness of the algorithm.
 * [`python/`](python/) a python implementation of Fotune's algorithm.
 	
