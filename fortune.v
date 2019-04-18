@@ -586,7 +586,17 @@ Compute init' small_data nil.
 Lemma test : main' small_data = (0%nat, nil, nil, nil).
 rewrite /main' /main.
 rewrite fortune_step.
-rewrite -[(muln _ 5)%N]/5%nat; lazy iota; lazy beta.
+set aa := (muln _ 5).
+have -> : aa = 5%nat by [].
+rewrite /small_data.
+set ab := init _ _ _ _.
+have -> : ab = [:: (false, (-23 # 1, -15 # 1), (-23 # 1, -15 # 1), (-23 # 1, -15 # 1), -15 # 1)] by [].
+set ac := (false, _, _, _, _).1.1.1.1.
+have -> : ac = false by [].
+fold handle_site_event'.
+set ad := _.1.1.2.
+have -> : ad = (-23 # 1, -15 # 1) by [].
+rewrite /handle_site_event' /handle_site_event.
 simpl init; lazy iota; lazy beta.
 simpl fst; lazy iota.
 have tmp : handle_site_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
@@ -602,3 +612,12 @@ have tmp3 : (search_veritcal 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt
   (0%nat, 0%nat, false) by [].
 rewrite tmp3.
 rewrite -[(0%nat, 0%nat, false).2]/false; lazy iota.
+simpl insert.
+set x := (false_alarm _ _ _ _ _ _).2.
+have -> : x = [::  Event false (-23 # 1, -15 # 1) (-23 # 1, -15 # 1)
+                          (-23 # 1, -15 # 1) (-15 # 1) ] by [].
+set w := check_circle_event 1 Qplus Qmult Qopp _ _ _ _ _ _ _ _ _ _ (_ :: _).
+have : w = ([:: (-23 # 1, -15 # 1, false); (-23 # 1, -15 # 1, false)],
+  [:: (false, (-23 # 1, -15 # 1), (-23 # 1, -15 # 1),
+      (-23 # 1, -15 # 1), -15 # 1)]).
+rewrite /w /check_circle_event.
