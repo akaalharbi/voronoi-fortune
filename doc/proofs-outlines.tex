@@ -3,6 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{fancyhdr}
 \usepackage{amsmath,amsthm,amssymb,amsfonts}
+\usepackage{xcolor}
 
 \newcommand{\N}{\mathbb{N}}
 \newcommand{\Q}{\mathbb{Q}}
@@ -14,22 +15,57 @@
 \lhead{Proofs outlines}
 \rfoot{Page \thepage}
 
-%%%%%%%%%%%%%%%%
+%---------------%
 \begin{document}
 
 \section{Goal}
-\section{Definitions}
-\subsection{f}
-\subsection{Cells}
-\subsection{complete}
-\subsection{incomplete}
+We would like to show that at each step the algorithm returns a correct result and at the end it returns a complete result.
+\subsection{Strategy}
+At the \textit{nth} step, we divide the plane into three regions :
+\begin{enumerate}
+    \item The \textbf{cliff}: Everything (\textit{sites, edges, cells}) in this region is complete and it doesn't affect anything below this line. This regions is characterized as anything doesn't belong to the. 
+    
+    \textbf{Proof:}
+    
+    {\color{red} \textit{(handwavy)}} every site in this region must be enclosed by a cell since it disappeared from the beach-line by circle event(s). Then from triangle inequality, argue that nothing beyond its cell bleong to the site's region.
+    
+    \item Beach: The region between the sweep-line and the beach-line.
+    \item Below the sweep-line: This region has no affect on lies above it.
+    
+    \textbf{Proof:}
+    
+    Anything above the beach-line is closer to regions \textit{2} and \textit{3} than any site below the sweep-line.
+    
+\end{enumerate}
 
+\section{Definitions}
+
+\subsection{Cells} For any site, if the collection of edges that has the site as one of the focal points form a cycle. Also, each end of those edges are equidistant from three sites then this cell is convex and a valid Voronoi decomposition.
+
+\textbf{Proof:}
+    This cell is formed by an intersection of half-planes thus it's convex. Also, it's valid since if $a, b$ are equidistant from $p, q$ then the whole segment $[a, b]$ is equidistant  from $p, q$. %TODO add drawing
+    
 \section{Functions}
 \subsection{Parabola Functions}
+\subsubsection{Intersection of two arcs}
+Let $p_1, p_2$ be two arcs and their intersections are $a_1, b_1$ then as the sweepline moves there will be new intersections $\left(a_1, b_1\right),\left(a_2, b_2\right),\dots \left(a_k, b_k\right)$ the line segments formed by $a_i$s lies on the same line similarly  $b_i$s satisfy the same property.
+
 The main method is to show that a solution belongs to two curves which boils down to algebraic manipulations.
 
 \subsection{Lines, Circles, and distances}
 \section{Events}
+We assume that the algorithm has processed n events. We would like to check if we have given a correct decomposition then preforming a site event or a circle event will preserve the correctness of the decomposition up to the cliff.
+
+\subsection{Bound on events length} If the beach-line is of length after a site event then at most there will be $n-2$ circle events. Thus, the queue length can't exceed $n^2$ where is the number of sites. Tightening this bound has no almost effect on the performance as it sole role to tell Coq the main function's recursion will terminate.
+
+
 \subsection{site event}
+
+
 \subsection{circle event}
+\begin{itemize}
+    \item removes an arc
+    \item equidistant between three points i.e. vertex
+    
+\end{itemize}
 \end{document}
