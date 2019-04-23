@@ -99,8 +99,8 @@ Definition edge  : Type := (point * point * point * point * bool)%type.
 Definition Edge  (st  fn  s_l  s_r  : point ) ( c : bool) : edge :=
                  (st, fn, s_l, s_r, c).
 Notation "p .complete" := (snd p) ( at level 82).
-Notation "p .e_r"  := (snd (fst p)) ( at level 82). (* p/Right site *)
-Notation "p .e_l"  := (snd (fst (fst p))) ( at level 82). (* Left site/p  *)
+Notation "p .ed_r"  := (snd (fst p)) ( at level 82). (* p/Right site *)
+Notation "p .ed_l"  := (snd (fst (fst p))) ( at level 82). (* Left site/p  *)
 Definition fn (e : edge) := snd (fst (fst (fst e))).
 Notation "p .fn" := (snd (fst (fst (fst p)))) ( at level 82). (* Final point *)
 Definition st (e : edge) := fst (fst (fst (fst e))).
@@ -237,7 +237,7 @@ Definition search_beach (p1 p2 p3 : point) ( beachline : seq arc): nat :=
 Definition search_edges (edges : seq edge) (p1 p2: point) : nat :=
 (* Given a list of edges, a left site p1, right site p2 then it returns the *) 
 (* the index where p1 p2 are the sites seperated by the edge                *)
-  find (fun x => (x.e_l === p1) && (x.e_r === p2)) edges.
+  find (fun x => (x.ed_l === p1) && (x.ed_r === p2)) edges.
 
 
 (* ========================== Geometric Functions ========================== *)
@@ -462,7 +462,7 @@ Definition special_case (ind       :     nat)   (p3    : point   )
   let pos      := vertical_intersection p1 p3                in
   let edg_ind  := search_edges edges p1 p2                   in
   let e1       := nth nulEd edges edg_ind                    in
-  let e1Upd    := Edge (e1.st) pos (e1.e_l) (e1.e_r) true    in
+  let e1Upd    := Edge (e1.st) pos (e1.ed_l) (e1.ed_r) true    in
   let updEdges := set_nth nulEd edges edg_ind e1Upd          in
   let e2       := Edge (pos) (pos) (p3) (p2) false           in
   let e3       := Edge (pos) (pos) (p1) (p3) false           in
@@ -516,10 +516,11 @@ Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
   let e_ind_m_r := search_edges edges m r                            in
   let e_l_m     := (nth nulEd edges e_ind_l_m)                       in
   let e_m_r     := (nth nulEd edges e_ind_m_r)                       in
-  let e_l_m'    := Edge (e_l_m.st) (c) (e_l_m.e_l) (e_l_m.e_r)  true in
-  let e_m_r'    := Edge (e_m_r.st) (c) (e_m_r.e_l) (e_m_r.e_r)  true in
+  let e_l_m'    := Edge (e_l_m.st) (c) (e_l_m.ed_l) (e_l_m.ed_r)  true in
+  let e_m_r'    := Edge (e_m_r.st) (c) (e_m_r.ed_l) (e_m_r.ed_r)  true in
   let newEdges  := set_nth nulEd edges e_ind_l_m e_l_m'              in
   let newEdges' := set_nth nulEd newEdges e_ind_m_r e_m_r'           in
+  let newEdges'' :=  [:: Edge c c l r false & newEdges'] in
   let i         := search_beach l m r beachline                      in
   let beach'    := remove i beachline                                in
   let i_left    := (i - 1)%nat                                       in
@@ -529,7 +530,7 @@ Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
   let BeaQ_r    := check_circle_event i_right y0 B_l Q_l             in
   let newBeach  := BeaQ_r.1                                          in
   let newQ      := BeaQ_r.2                                          in
-  (newBeach, newEdges', newQ) .
+  (newBeach, newEdges'', newQ) .
 
 
 
@@ -746,13 +747,6 @@ set am := handle_site_event' _ _ _ _.
 set p6 := (-2 # 1, -129 # 20).
 set es4 := [:: (p6, p6, p3, p2, false); (p6, p6, p2, p3, false);
      (p5, p5, p2, p1, false); (p5, p5, p1, p2, false)].
-Compute circumcenter 1 Qplus Qmult Qopp Qinv
-  Qnatmul (-11#1,-4#1) (1#1, -12#1) (6#1, -11#1).
-Compute circumcenter 1 Qplus Qmult Qopp Qinv
-  Qnatmul (0#1, 0#1) (7#1, -1#1) (0#1, 6#1).
-Compute (2688 / 662, 2688 mod 672)%Z.
-Compute circumcenter 1 Qplus Qmult Qopp Qinv
-  Qnatmul (-4#1, -3#1) (3#1, -4#1) (-3#1, 4#1).
 set bl3 := [:: (p1, false); (p2, true); (p3, false); (p2, false); (p1, false)].
 set q4 := [:: (true, p1, p2, p3, -9 # 1); (false, p4, p4, p4, 15 # 1)].
 set q5 := [:: (false, p4, p4, p4, 15 # 1)].
@@ -774,7 +768,8 @@ set bl4 := [:: (p1, false); (p3, false); (p2, false); (p1, false)].
 set p7 := (-6712 # 2512, -17384 # 2512).
 set p8 := (4 # 1, 143 # 48).
 set p9 := (30192 # 2528, 8368 # 2528).
-set es5 := [:: (p6, p6, p3, p2, false); (p6, p7, p2, p3, true);
+set es5 := [:: (p7, p7, p1, p3, false);
+     (p6, p6, p3, p2, false); (p6, p7, p2, p3, true);
      (p5, p5, p2, p1, false); (p5, p7, p1, p2, true)].
 have -> : an = (bl4, es5, q5) by [].
 rewrite /q5 -[(bl4, _, _).1.1]/bl4 -[(_, es5, _).1.2]/es5 -[_.2]/q5.
@@ -783,22 +778,55 @@ rewrite -/handle_site_event'; set aw := handle_site_event' _ _ _ _.
 set bl5 := [:: (p1, false); (p3, false); (p2, true); (p4, false);
             (p2, false); (p1, false)].
 set es6 := [:: (p8, p8, p4, p2, false); (p8, p8, p2, p4, false); 
-     (p6, p6, p3, p2, false); (p6, p7, p2, p3, true); (p5, p5, p2, p1, false);
+     (p7, p7, p1, p3, false); (p6, p6, p3, p2, false);
+     (p6, p7, p2, p3, true); (p5, p5, p2, p1, false);
       (p5, p7, p1, p2, true)].
 set q6 := [:: (true, p3, p2, p4, -9 # 1)].
 have -> : aw = (bl5, es6, q6) by [].
 rewrite -[_.1.1]/bl5 -[_.1.2]/es6 -[_.2]/q6 fortune_step.
-rewrite [q6](_ : _ = [:: (true, p3, p2, p4, -9 # 1)]).
-rewrite [_.1.1.1.1](_ : _ = true).
+rewrite [q6](_ : _ = [:: (true, p3, p2, p4, -9 # 1)]); last by [].
+rewrite [_.1.1.1.1](_ : _ = true); last by [].
+set es7 := [:: 
+      (p9, p9, p3, p4, false);
+      (p8, p8, p4, p2, false); (p8, p9, p2, p4, true);
+      (p7, p7, p1, p3, false);
+      (p6, p9, p3, p2, true); (p6, p7, p2, p3, true);
+      (p5, p5, p2, p1, false); (p5, p7, p1, p2, true)].
+set bl6 := [:: (p1, false); (p3, true); (p4, false); (p2, false); (p1, false)].
+set e7 := (true, p1, p3, p4, 1).
 set ax := handle_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
        Qlt_bool
        Qnatmul Qexp (true, p3, p2, p4, -9 # 1) bl5 es6 [::].
-compute in ax; rewrite /ax.
-rewrite fortune_step.
-rewrite [_.2](_ : _ = [:: (true, p1, p3, p4, 1) ]); last by [].
+have -> : ax = (bl6, es7, [:: e7]) by [].
+lazy zeta; rewrite -[_.1.1]/bl6 -[_.1.2]/es7 fortune_step.
+rewrite [_.2](_ : _ = [:: e7]); last by [].
 rewrite [_.1.1.1.1](_ : _ = true); last by [].
+set p10 := (-42608 # 736, 24464 # 736).
+set bl7 := [:: (p1, false); (p4, false); (p2, false); (p1, false)].
+set p_ABS := (1, 2#1).
+set es8 := [:: (p8, p8, p4, p2, false); (p8, p9, p2, p4, true);
+      (p6, p9, p3, p2, true); (p6, p7, p2, p3, true);
+      (p5, p5, p2, p1, false); (p5, p7, p1, p2, true);
+      (p_ABS, p10, p_ABS, p_ABS, true)].
 set ay := handle_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _ _.
-rewrite /ay.
+have -> : ay = (bl7, es8, [::]).
+rewrite /ay /handle_circle_event.
+rewrite -/check_circle_event'.
+set az  := (X in check_circle_event' _ _ X.1); rewrite -/az.
+set ba := search_edges _ _ _ _.
+have -> : ba = 3.
+  rewrite /ba /es7 /e7 [_.1.1.1.2](_ : _ = p1); last by [].
+by [].
+compute.
+  rewrite [_.1.1.2](_ : _ = p3); last by [].
+rewrite /search_edges.
+compute.
+rewrite /ba /search_edges.
+compute in ba.
 
-    compute; rewrite -/p1 -/p2 -/p3 -/p4 -/p5 -/p6 -/bl3' -/bl3 -/q5 -/es4 -/q4.
-
+set ba := set_nth _ _ _ _.
+compute in ba.
+compute in az.
+set az := (X in check_circle_event _ X.1).
+    compute; rewrite -/p1 -/p2 -/p3 -/p4 -/p5 -/p6 -/p7 -/p8 -/p9 -/p10 -/p_ABS.
+    
