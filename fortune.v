@@ -774,7 +774,9 @@ set es5 := [:: (p7, p7, p1, p3, false);
 have -> : an = (bl4, es5, q5) by [].
 rewrite /q5 -[(bl4, _, _).1.1]/bl4 -[(_, es5, _).1.2]/es5 -[_.2]/q5.
 rewrite fortune_step /q5 -[(false, _, _, _, _).1.1.1.1]/false.
-rewrite -/handle_site_event'; set aw := handle_site_event' _ _ _ _.
+rewrite -/handle_site_event'.
+rewrite -[_.1.1.2]/p4.
+set aw := handle_site_event' p4 _ _ _.
 set bl5 := [:: (p1, false); (p3, false); (p2, true); (p4, false);
             (p2, false); (p1, false)].
 set es6 := [:: (p8, p8, p4, p2, false); (p8, p8, p2, p4, false); 
@@ -782,7 +784,18 @@ set es6 := [:: (p8, p8, p4, p2, false); (p8, p8, p2, p4, false);
      (p6, p7, p2, p3, true); (p5, p5, p2, p1, false);
       (p5, p7, p1, p2, true)].
 set q6 := [:: (true, p3, p2, p4, -9 # 1)].
-have -> : aw = (bl5, es6, q6) by [].
+have -> : aw = (bl5, es6, q6).
+  rewrite /aw /handle_site_event' /handle_site_event.
+  set ba := search_vertical _ _ _ _ _ _ _ _ _ _ _ _ _.
+  compute in ba.
+  rewrite [ba.2](_ : _ = false); last by [].
+  set bb := insert _ _ _.
+  set bc := vertical_intersection _ _ _ _ _ _ _ _ _.
+  compute in bc.
+  set bd := focal _; have -> : bd = p2 by [].
+  set be := pick_sol 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qnatmul
+            Qexp p2 p3 (15#1).
+  compute in be.
 rewrite -[_.1.1]/bl5 -[_.1.2]/es6 -[_.2]/q6 fortune_step.
 rewrite [q6](_ : _ = [:: (true, p3, p2, p4, -9 # 1)]); last by [].
 rewrite [_.1.1.1.1](_ : _ = true); last by [].
@@ -817,7 +830,7 @@ set ba := search_edges _ _ _ _.
 have -> : ba = 3.
   rewrite /ba /es7 /e7 [_.1.1.1.2](_ : _ = p1); last by [].
 by [].
-compute.
+compute; rewrite -/p1 -/p2 -/p3 -/p4 -/p5 -/p6 -/p7 -/p8 -/p9.
   rewrite [_.1.1.2](_ : _ = p3); last by [].
 rewrite /search_edges.
 compute.
