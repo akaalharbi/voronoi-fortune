@@ -98,16 +98,56 @@ We divide the plane into three regions :
 
 \textbf{Proof:}
     This cell is formed by an intersection of half-planes thus it's convex. Also, it's valid since if $a, b$ are equidistant from $p, q$ then the whole segment $[a, b]$ is equidistant  from $p, q$. %TODO add drawing
-    
+
+\subsection{beachline}
+Beach line can be built inductively as the following:
+ 
+ $B =  \begin{cases}
+    a \text{ an arc} \\
+    B'dndB'', \text{ where } B'dB'' \text{ is a beachline and } d \& n \text{ are arcs and  } liesabove(d, n) = true \\
+    B'abB'' \text{ where } B'adbB'' \text{ is a beachline and } circum_circle(a, b, d) \text{ touches the sweepline}  
+  \end{cases} $
+One can see a similarity between this construction and balanced brackets. % TODO Add drawing
+Example let $ B := \left[a, b, c, b, d, x, d, b, e, b, a \right]$ then $ab$ will be closed by $ba$,  when opening a bracket e.g. $ab$ then $a$ will not occur inside. Also, there is a self-closing bracket e.g. $[a, b, c]$ then $ab$ balances itself.
+
+\subsubsection{From beachline to correct decomposition}
+- All edges that don't have both sites as consecutive elements are complete.
+
+
+- For each consecutive elements in the beachline, make sure there is an edge and the two ends and there are no site that ...
+
+
+
 \section{Functions}
 {\color{red} \tt - Go through all functions}
+\subsection{sequence functions}
+\begin{itemize}
+    \item {\tt insert} check that nth position of the result is the element that are inserted at the nth position
+    \item {\tt search\_beach} Check that nth position of the beachline is p2
+    \item {\tt search\_edges } verify that the returned edges has the two points as sites. Bonus, it's the unique edge that satisfies this property. 
+    
+\end{itemize}
+\subsection{Geometric Functions}
+The distance function is the Euclidean distance in the plane. 
+\begin{itemize}
+    \item {\tt midpoint} the returned point is equidistant to the both arguments $p_1, p_2$. 
+    \item {\tt direction} 
+    \item {\tt dot\_prod}
+    \item {\tt line} add belongs\_to function.
+    \item {\tt line\_intersection } the result belongs to both lines
+    \item {\tt collinear} 
+\end{itemize}
+
 \subsection{Parabola Functions}
 \subsubsection{Intersection of two arcs}
 Let $p_1, p_2$ be two arcs and their intersections are $a_1, b_1$ then as the sweepline moves there will be new intersections $\left(a_1, b_1\right),\left(a_2, b_2\right),\dots \left(a_k, b_k\right)$ the line segments formed by $a_i$s lies on the same line similarly  $b_i$s satisfy the same property.
 
 The main method is to show that a solution belongs to two curves which boils down to algebraic manipulations.
 
-\subsection{Lines, Circles, and distances}
+\subsection{Event Helpers}
+\subsubsection{Check\_circle\_event}
+- Check that it will 
+
 \section{Events}
 We assume that the algorithm has processed n events. We would like to check if we have given a correct decomposition then preforming a site event or a circle event will preserve the correctness of the decomposition up to the cliff.
 
