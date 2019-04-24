@@ -357,7 +357,7 @@ Definition pick_sol (p1 p2 : point) (y0 : R) : R :=
     let C := 2%:R * (B * (p1.y - y0) - (p1.x)) in
     let D := p1.x ^ 2 + (p1.y) ^ 2 - 2%:R * A * (p1.y - y0) - y0 ^ 2 in
     let discr := (C ^ 2 - 4%:R * D) in
-    if p1.x <= p2.x then
+    if p1.y <= p2.y then
       (- C - sqrtr discr) / 2%:R
     else (- C + sqrtr discr) / 2%:R.
 
@@ -643,36 +643,6 @@ Extraction "fortune.ml" main'.
 
 (* Alternatively, you can run the functions directly inside Coq, as follows. *)
 
-Definition small_data := [:: (-10#1, -10#1); (5#1, -9#1); (-2#1, 1#1);(4#1,15#1)].
-
-Definition result :=  main' small_data.
-
-Compute result.
-Compute List.length result.1.2.  (* 6 edges.  not good? *)
-
-Definition handle_site_event' :=
-  handle_site_event (1 : Q) Qplus Qmult Qopp Qinv Qsqrt
-   Qeq_bool Qle_bool Qlt_bool Qnatmul Qexp.
-
-Definition check_circle_event' :=
-  check_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool
-         Qnatmul Qexp.
-
-Definition init' := init Qeq_bool Qle_bool.
-
-Compute init' small_data nil.
-
-Definition q1 := Eval compute in init' (behead small_data) nil.
-
-Definition dsquare (p1 p2 : point Q) :=
-  (fst p1 - fst p2) ^ 2 + (snd p1 - snd p2) ^ 2.
-
-Compute (dsquare (-3#1, -4#1) (0#1, 0#1)).
-Compute (dsquare (4#1, -3#1) (0#1, 0#1)).
-
-Compute match "0"%string with String a _ => Ascii.N_of_ascii a | _ => 0%N end.
-Compute String Ascii.one EmptyString.
-
 Definition Z_to_dec_step (n : Z) (right_string : string)
       (cont : Z -> string -> string) : string :=
   let step_string :=
@@ -710,10 +680,69 @@ Definition print_edge (e : edge Q) :=
     (append (print_point (fn e)) 
     (append "lineto"%string eol))).
 
-Compute foldr (fun e s => append (print_edge e) s) ""%string
-  (snd (fst (main' (take 4 small_data)))).
+Definition blue_point (p : point Q) :=
+  append (append (print_point p) "mkp"%string) eol.
 
-Lemma test : main' small_data = (0%nat, nil, nil, nil) (* this a dummy value. *).
+Definition small_data := [:: (-10#1, -10#1); (5#1, -9#1); (-2#1, 1#1);(4#1,15#1); (6#1, 3#1), (12#1, 8#1)].
+
+Compute 
+  let input := (take 5 small_data) in
+  let result := main' input in
+  append (append "%!PS" eol) 
+    (append
+    "/mkp { newpath 1 0 360 arc stroke} def 300 400 translate 3 3 scale "
+  (foldr
+  (fun e s => append (blue_point e) s)
+  (foldr (fun e s => append (print_edge e) s) "stroke"%string
+     (snd (fst result)))
+   input))
+  .
+
+Definition result :=  main' small_data.
+
+Definition handle_site_event' :=
+  handle_site_event (1 : Q) Qplus Qmult Qopp Qinv Qsqrt
+   Qeq_bool Qle_bool Qlt_bool Qnatmul Qexp.
+
+Definition check_circle_event' :=
+  check_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool
+         Qnatmul Qexp.
+
+Definition init' := init Qeq_bool Qle_bool.
+
+Compute init' small_data nil.
+
+Definition q1 := Eval compute in init' (behead small_data) nil.
+
+Definition dsquare (p1 p2 : point Q) :=
+  (fst p1 - fst p2) ^ 2 + (snd p1 - snd p2) ^ 2.
+
+Compute (dsquare (-3#1, -4#1) (0#1, 0#1)).
+Compute (dsquare (4#1, -3#1) (0#1, 0#1)).
+
+Compute result.
+Lemma test : main' small_data = (14%nat, 
+  [:: (-10#1, -10#1, false); (4#1, 15#1, false); (5#1, -9#1, false);
+   (-10#1, -10#1, false)], 
+  [:: (-42608 # 736, 24464 # 736, (-42608 # 736, 24464 # 736),
+           (-10 # 1, -10 # 1), (4 # 1, 15 # 1), false);
+           (30192 # 2528, 8368 # 2528, (30192 # 2528, 8368 # 2528),
+           (4 # 1, 15 # 1), (5 # 1, -9 # 1), false);
+           (4 # 1, 188 # 28, (30192 # 2528, 8368 # 2528), 
+           (4 # 1, 15 # 1), (-2 # 1, 1), true);
+           (4 # 1, 188 # 28, (-42608 # 736, 24464 # 736), 
+           (-2 # 1, 1), (4 # 1, 15 # 1), true);
+           (-6712 # 2512, -17384 # 2512, (-42608 # 736, 24464 # 736),
+           (-10 # 1, -10 # 1), (-2 # 1, 1), true);
+           (-2 # 1, -129 # 20, (30192 # 2528, 8368 # 2528), 
+           (-2 # 1, 1), (5 # 1, -9 # 1), true);
+           (-2 # 1, -129 # 20, (-6712 # 2512, -17384 # 2512),
+           (5 # 1, -9 # 1), (-2 # 1, 1), true);
+           (5 # 1, -244 # 2, (5 # 1, -244 # 2), (5 # 1, -9 # 1),
+           (-10 # 1, -10 # 1), false);
+           (5 # 1, -244 # 2, (-6712 # 2512, -17384 # 2512),
+           (-10 # 1, -10 # 1), (5 # 1, -9 # 1), true)], [::]).
+Proof.
 (* Unfold the main functions. *)
 rewrite /main' /main.
 rewrite /small_data.
@@ -742,7 +771,8 @@ set es1 := [:: (p5, p5, p2, p1, false); (p5, p5, p1, p2, false)].
 have -> : ae = ([:: (p1, false); (p2, false); (p1, false)], es1, q3) by [].
 rewrite -[_.1.1]/(_ :: _) -[_.1.2]/es1 -[_.2]/q3.
 rewrite fortune_step.
-rewrite /q3 [_.1](_ : _ = false) // -/handle_site_event' -[_.1.1.2]/p3.
+rewrite /q3 [_.1](_ : _ = false); last by []. 
+rewrite -/handle_site_event' -[_.1.1.2]/p3.
 set am := handle_site_event' _ _ _ _.
 set p6 := (-2 # 1, -129 # 20).
 set es4 := [:: (p6, p6, p3, p2, false); (p6, p6, p2, p3, false);
@@ -787,6 +817,21 @@ set q6 := [:: (true, p3, p2, p4, -9 # 1)].
 have -> : aw = (bl5, es6, q6).
   rewrite /aw /handle_site_event' /handle_site_event.
   set ba := search_vertical _ _ _ _ _ _ _ _ _ _ _ _ _.
+  have : ba = (1%nat, 1%nat, false).
+  rewrite /ba search_vertical_step.
+  rewrite /bl4.
+  set ca := before _ _ _ _ _ _ _ _ _ _ _ _ _ _.
+    compute in ca; rewrite /ca.
+    rewrite [_ && _](_ : _ = false); last by [].
+    rewrite [(false, false).1](_ : _ = false); last by [].
+  set cb := search_vertical _ _ _ _ _ _ _ _ _ _ _ _ _.
+  have : cb = (0%nat, 0%nat, false).
+  rewrite /cb search_vertical_step.
+  set cd := before _ _ _ _ _ _ _ _ _ _ _ _ _ _.
+  have : cd = (true, false).
+  rewrite /cd /before.
+  set ce := pick_sol _ _ _ _ _ _ _ _ _ _ _ _ _.
+  compute in ce.
   compute in ba.
   rewrite [ba.2](_ : _ = false); last by [].
   set bb := insert _ _ _.
@@ -796,6 +841,7 @@ have -> : aw = (bl5, es6, q6).
   set be := pick_sol 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qnatmul
             Qexp p2 p3 (15#1).
   compute in be.
+
 rewrite -[_.1.1]/bl5 -[_.1.2]/es6 -[_.2]/q6 fortune_step.
 rewrite [q6](_ : _ = [:: (true, p3, p2, p4, -9 # 1)]); last by [].
 rewrite [_.1.1.1.1](_ : _ = true); last by [].
