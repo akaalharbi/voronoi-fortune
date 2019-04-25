@@ -700,8 +700,17 @@ Definition print_edge (e : edge Q) :=
 Definition blue_point (p : point Q) :=
   append (append (print_point p) "mkp"%string) eol.
 
-Definition small_data := [:: (-10#1, -10#1); (5#1, -9#1); (-2#1, 1#1);(4#1,15#1); (6#1, 3#1); (12#1, 8#1); (-8 # 1, 7 # 1);
+Definition small_data := [:: (-10#1, -10#1); (5#1, -9#1); (-2#1, 1#1);
+  (4#1,15#1); (6#1, 3#1); (12#1, 8#1); (-8 # 1, 7 # 1);
   (15 # 1, 18# 1); (20 # 1, 0 # 1); (-12 # 1, 24 # 1); (-201 # 10, 3 # 1)].
+
+Definition display_points (ps : seq (point Q)) (final_string : string) :
+  string :=
+  foldr (fun e s => append (blue_point e) s) final_string ps.
+
+Definition display_edges (es : seq (edge Q)) (final_string : string) :
+  string :=
+  foldr (fun e s => append (print_edge e) s) final_string es.
 
 Compute 
   let input := (take 11 small_data) in
@@ -709,11 +718,48 @@ Compute
   append (append "%!PS" eol) 
     (append
     "/mkp { newpath 1 0 360 arc stroke} def 300 400 translate 3 3 scale "
-  (foldr
-  (fun e s => append (blue_point e) s)
-  (foldr (fun e s => append (print_edge e) s) "stroke"%string
-     (snd (fst result)))
-   input)).
+  (display_points input
+    (display_edges (snd (fst result)) "stroke%string"))).
+
+Fixpoint animate_fortune (n : nat) bl eds q :
+  nat * seq (arc Q) * seq (edge Q) * seq (event Q) :=
+  match n with
+  | 0%nat => (0%nat, bl, eds, q)
+  | S p => fortune 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool
+              Qnatmul Qexp (S p) bl eds q
+  end.
+
+Definition animate_main (n : nat) (ps : seq (point Q)) :=
+  let q := init Qeq_bool Qle_bool Qlt_bool ps (emQ Q) in
+  match q with
+  | [::] => (0%nat, emB Q, emEd Q, emQ Q)
+  | p :: q =>
+  fortune 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool
+    Qnatmul Qexp n [:: Arc (p.1.1.2) false] (emEd Q) q
+  end.
+
+Fixpoint animate_loop (n k : nat) (ps : seq (point Q)) : string :=
+  match n with
+  | 0%nat => ""%string
+  | S p =>
+    let result := animate_main (S k - (S p)) ps in
+    let page_num := Z_to_decimal (Z.of_nat (S k - (S p))) in
+    foldr append
+      (display_points ps (display_edges (snd (fst result))
+        (append (append "stroke showpage" eol)
+            (animate_loop p k ps))))
+      ([:: "%%Page "; page_num; " "; page_num; eol;
+     "/mkp { newpath 1 0 360 arc stroke} def 300 400 translate 3 3 scale"; eol;
+ "newpath"; eol])%string
+  end.
+
+Definition animate (n : nat) : string :=
+  (foldr append ""
+    [:: "%!PS-adobe-2"; eol;
+     "%%Pages "; (Z_to_decimal (Z.of_nat n)); eol;
+     animate_loop n n small_data])%string.
+
+Compute animate 34.
 
 Definition result :=  main' small_data.
 Compute result.
