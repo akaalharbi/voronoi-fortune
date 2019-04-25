@@ -34,20 +34,8 @@ fff
 
 
 We divide the plane into three regions :
-\begin{enumerate}
-    \item The \textbf{cliff}: Everything (\textit{sites, edges, cells}) in this region is complete and it doesn't affect anything below this line. This regions is characterized as anything doesn't belong to the. 
-    
-    \textbf{Proof:}
-    
-    {\color{red} \textit{(handwavy)}} every site in this region must be enclosed by a cell since it disappeared from the beach-line by circle event(s). Then from triangle inequality, argue that nothing beyond its cell bleong to the site's region.
-    
-    \item \textbf{Beach}: The region between the sweep-line and the beach-line.
-    \item \textbf{offshore} Below the sweep-line: This region has no affect on lies above it.
-    
-    \textbf{Proof:}
-    
-    Anything above the beach-line is closer to regions \textit{2} and \textit{3} than any site below the sweep-line.
-    \item \textbf{Events}
+ 
+ \textbf{Events}
     \begin{itemize}
         \item \textit{Site even}t :
             \begin{displayquote}
@@ -90,7 +78,7 @@ We divide the plane into three regions :
  
     \end{itemize}
     
-\end{enumerate}
+
 
 \section{Definitions}
 
@@ -153,6 +141,25 @@ We assume that the algorithm has processed n events. We would like to check if w
 
 \subsection{Bound on events length} If the beach-line is of length after a site event then at most there will be $n-2$ circle events. Thus, the queue length can't exceed $n^2$ where is the number of sites. Tightening this bound has no almost effect on the performance as it sole role to tell Coq the main function's recursion will terminate.
 
+\section{Train of thoughts}
+We need first to define voronoi diagram. A plausible definition is the union of all sites cells where $cell(p)= \bigcap_{q \in sites, q\not = p} H(p, q) $ where 
+$$H(p, q) = \left\{(x,y) : d\left(p,(x, y) \right) \leq  d\left(q,(x, y) \right) \right\}$$ 
+Another definition is by edges and the closest sites. we need they are equivalent.
 
+Having defined voronoi, we then define partially correct edges. $e'$ is a partially correct edge, if there is an $e$ where $e' \subseteq e$.
+
+We define $\subseteq$ for line segments in the usual sense. 
+
+How to argue a beachline is correct?
+
+How to show that when a site disappear from the beachline then it must forms a complete connected cell?
+
+Show that if the edge is between a site s and the closest site to it s' then it must be in the voronoi diagramm
+
+Show that the beachline is connected for any new site either an arc lies above it or the new site will be extreme right or left.
+
+Discuss in details how the sweepline movement affects the shape of the diagram if no sites was discovered.
+
+When to delete a circle event
 
 \end{document}
