@@ -674,28 +674,37 @@ Definition Z_to_decimal (n : Z) :=
 
 Definition eol := String (Ascii.ascii_of_N 10) EmptyString.
 
-Definition print_Q (r : Q) :=
+Definition print_Q_exact (r : Q) :=
   append (Z_to_decimal (Qnum r)) 
   (append " "%string
-  (append (Z_to_decimal (Zpos (Qden r)))
-   (append " div" eol))).
+  (append (Z_to_decimal (Zpos (Qden r))) " div ")).
+
+Definition print_Q_approximate (r : Q) :=
+  let v := (1000 * Qnum r / (Zpos (Qden r)))%Z in
+  append (Z_to_decimal v) " 1000 div ".
+
+Definition print_Q := print_Q_exact.
 
 Definition print_point (p : point Q) :=
   append (print_Q (fst p))
   (append " "%string (append (print_Q (snd p)) " "%string)).
 
 Definition print_edge (e : edge Q) :=
-  append (print_point (st e)) (append "moveto "%string
-    (append (print_point (fn e)) 
-    (append "lineto"%string eol))).
+  if snd e then
+    append (print_point (st e)) (append "moveto "%string
+      (append (print_point (fn e)) 
+      (append "lineto"%string eol)))
+  else
+    ""%string.
 
 Definition blue_point (p : point Q) :=
   append (append (print_point p) "mkp"%string) eol.
 
-Definition small_data := [:: (-10#1, -10#1); (5#1, -9#1); (-2#1, 1#1);(4#1,15#1); (6#1, 3#1); (12#1, 8#1); (-8 # 1, 7 # 1); (15 # 1, 18# 1); (20 # 1, 0 # 1); (-12 # 1, 24 # 1); (-20 # 1, 3 # 1)].
+Definition small_data := [:: (-10#1, -10#1); (5#1, -9#1); (-2#1, 1#1);(4#1,15#1); (6#1, 3#1); (12#1, 8#1); (-8 # 1, 7 # 1);
+  (15 # 1, 18# 1); (20 # 1, 0 # 1); (-12 # 1, 24 # 1); (-201 # 10, 3 # 1)].
 
 Compute 
-  let input := (take 10 small_data) in
+  let input := (take 11 small_data) in
   let result := main' input in
   append (append "%!PS" eol) 
     (append
@@ -707,9 +716,14 @@ Compute
    input)).
 
 Definition result :=  main' small_data.
+Compute result.
 
 Definition handle_site_event' :=
   handle_site_event (1 : Q) Qplus Qmult Qopp Qinv Qsqrt
+   Qeq_bool Qle_bool Qlt_bool Qnatmul Qexp.
+
+Definition handle_circle_event' :=
+  handle_circle_event (1 : Q) Qplus Qmult Qopp Qinv Qsqrt
    Qeq_bool Qle_bool Qlt_bool Qnatmul Qexp.
 
 Definition check_circle_event' :=
@@ -729,8 +743,39 @@ Compute (dsquare (-3#1, -4#1) (0#1, 0#1)).
 Compute (dsquare (4#1, -3#1) (0#1, 0#1)).
 
 Compute result.
+
+Lemma expand_event_kind (b : bool) (p1 p2 p3 : point Q) (q : Q) :
+  (b, p1, p2, p3, q).1.1.1.1 = b.
+Proof. by []. Qed.
+
+Lemma expand_res1 (s1 : seq (point Q * bool))
+   (s2 : seq (edge Q)) (s3 : seq (event Q)) :
+  (s1, s2, s3).1.1 = s1.
+Proof. by []. Qed.
+
+Lemma expand_res2 (s1 : seq (point Q * bool))
+   (s2 : seq (edge Q)) (s3 : seq (event Q)) :
+  (s1, s2, s3).1.2 = s2.
+Proof. by []. Qed.
+
+Lemma expand_res3 (s1 : seq (point Q * bool))
+  (s2 : seq (edge Q)) (s3 : seq (event Q)) :
+  (s1, s2, s3).2 = s3.
+Proof. by []. Qed.
+
 Lemma test : main' small_data = result.
 Proof.
+rewrite /main' /main /small_data.
+set w := muln _ _; compute in w; rewrite /w {w}.
+set w := init _ _ _ _ _; compute in w; rewrite /w {w}.
+do 10 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
 (* Unfold the main functions. *)
 rewrite /main' /main.
 rewrite /small_data.
