@@ -712,6 +712,7 @@ Definition display_edges (es : seq (edge Q)) (final_string : string) :
   string :=
   foldr (fun e s => append (print_edge e) s) final_string es.
 
+(*
 Compute 
   let input := (take 11 small_data) in
   let result := main' input in
@@ -720,6 +721,7 @@ Compute
     "/mkp { newpath 1 0 360 arc stroke} def 300 400 translate 3 3 scale "
   (display_points input
     (display_edges (snd (fst result)) "stroke%string"))).
+*)
 
 Fixpoint animate_fortune (n : nat) bl eds q :
   nat * seq (arc Q) * seq (edge Q) * seq (event Q) :=
@@ -753,13 +755,15 @@ Fixpoint animate_loop (n k : nat) (ps : seq (point Q)) : string :=
  "newpath"; eol])%string
   end.
 
-Definition animate (n : nat) : string :=
+Definition animate (n : nat) (ps : seq (point Q)) : string :=
   (foldr append ""
     [:: "%!PS-adobe-2"; eol;
      "%%Pages "; (Z_to_decimal (Z.of_nat n)); eol;
-     animate_loop n n small_data])%string.
+     animate_loop n n ps])%string.
 
-Compute animate 34.
+Compute animate 30 small_data.
+
+(* Compute animate 30 (take 10 small_data). *)
 
 Definition result :=  main' small_data.
 Compute result.
