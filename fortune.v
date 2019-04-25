@@ -813,12 +813,12 @@ Lemma expand_res3 (s1 : seq (point Q * bool))
   (s1, s2, s3).2 = s3.
 Proof. by []. Qed.
 
-Lemma test : main' small_data = result.
+Lemma test : main' (take 11 small_data) = result.
 Proof.
 rewrite /main' /main /small_data.
 set w := muln _ _; compute in w; rewrite /w {w}.
 set w := init _ _ _ _ _; compute in w; rewrite /w {w}.
-do 10 (rewrite fortune_step;
+do 18 (rewrite fortune_step;
 rewrite expand_event_kind;
 ((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
 rewrite /w {w}) ||
@@ -826,6 +826,32 @@ rewrite /w {w}) ||
 rewrite /w {w}));
 rewrite expand_res1 expand_res2 expand_res3).
 
+do 1 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+do 1 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+do 1 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+Compute ((37184 * 100) / 1664)%Z.
+Compute ((17216 * 100) / 1664)%Z.
 (* Unfold the main functions. *)
 rewrite /main' /main.
 rewrite /small_data.
