@@ -595,11 +595,11 @@ Fixpoint init (s : seq point) (Q : seq event): seq event :=
   end.
 
 Definition main (s : seq point)  :=
-  match s with
+  let q := init s emQ in
+  match q with
   | p :: t =>
-    let Q := init t emQ in
     let n := ((size s)*5)%nat        in (* TODO Find an accurate upper bound *)
-    let res := fortune n [:: Arc p false] emEd Q  in (* To add an extra box *)
+    let res := fortune n [:: Arc (p.m) false] emEd q  in (* To add an extra box *)
     res
    | [::] => (0%nat, emB, emEd, emQ)
    end.
