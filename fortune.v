@@ -606,6 +606,24 @@ Definition main (s : seq point)  :=
    | [::] => (0%nat, emB, emEd, emQ)
    end.
   
+Definition add_infinite_edge (p1 p2 : point) (es : seq edge) : seq edge :=
+  let i := find [pred e | (e.ed_l === p1) && (e.ed_r === p2)]
+             es in
+  if eqn i (size es) then [::] else
+  let e := nth nulEd es i in
+  (* vectx is perpendicular to the vector p1 p2. *)
+  let vectx := (p1.y) - (p2.y) in
+  let vecty := (p2.x) - (p1.x) in
+  [:: Edge (e.st) (Point (e.st.x + vectx) (e.st.y + vecty)) p1 p2 true &
+      remove i es].
+
+Fixpoint add_infinites (bl : seq arc) (es : seq edge) : seq edge :=
+  match bl with
+  | (a, _) :: ((b, _) :: _) as tl =>
+    add_infinites tl (add_infinite_edge a b es)
+  | _ => es
+  end.
+
 End ab1.
 
 (* Now we shall make the code rely on rational computations. *)
@@ -763,17 +781,25 @@ Definition animate (n : nat) (ps : seq (point Q)) : string :=
      "%%Pages "; (Z_to_decimal (Z.of_nat n)); eol;
      animate_loop n n ps])%string.
 
+Definition add_infinite_edge' :=
+    add_infinite_edge 1 Qplus Qopp Qeq_bool Qnatmul.
+
+Definition add_infinites' := add_infinites 1 Qplus Qopp Qeq_bool Qnatmul.
+
 Definition display_final (ps : seq (point Q)) : string :=
+  let result := main' ps in
   foldr append ""%string
     ([:: "%!PS-adobe-2"; eol;
      "/mkp { newpath 1 0 360 arc stroke} def 300 400 translate 3 3 scale"; eol;
      "newpath"; eol;
-     display_points ps (display_edges (snd (fst (main' ps))) "stroke showpage");
+     display_points ps (display_edges
+        (add_infinites' (snd (fst (fst result)))
+            (snd (fst result))) "stroke showpage");
      eol])%string.
 
-(* Compute display_final small_data. *)
+Compute display_final small_data.
 
-Compute animate 24 (take 11 small_data).
+(* Compute animate 24 (take 11 small_data). *)
 
 Definition result :=  main' small_data.
 Compute result.
@@ -914,278 +940,6 @@ set bl := [:: _ & _].
 set es := [:: (_, _, (_, _), (_, _), (_, _), false) & _].
 rewrite fortune_step expand_event_kind -/handle_site_event'.
 set q := [:: _ & _].
-set w := handle_site_event' _ _ _ _.
-have : w = (nil, nil, nil).
-  rewrite /w /handle_site_event' /handle_site_event.
-set aa := search_vertical _ _ _ _ _ _ _ _ _ _ _ _ _.
-compute in aa; rewrite [aa.2](_ : _ = false); last by [].
-rewrite -[(aa.1.1 + 2)%nat]/6 -[(_, _).1.1.2.2]/(18#1) -[(aa.1.1+1)%nat]/5.
-rewrite -[Arc _ false]/(Arc (15 # 1, 18 # 1) false).
-set ad := vertical_intersection _ _ _ _ _ _ _ _ _.
-rewrite -[ad]/(15 # 1, 251 # 20) -[_.1.1.2]/(15 # 1, 18 # 1).
-set ae := insert _ _ _; compute in ae; rewrite /ae; set bl2 := [:: _ & _].
-set es2 := [:: _ & _].
-set ab := (X in check_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _ X.2).
-rewrite -/ab.
-set af := check_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _ _.
-have : af = (nil, nil).
-rewrite /af /check_circle_event.
-set p1 := focal _.
-set p2 := focal _.
-set p3 := focal _.
-set cc := circumcenter _ _ _ _ _ _ _ _ _.
-rewrite 2!orFb.
-set ag := Qlt_bool _ _.
-compute in p1.
-compute in p2.
-compute in p3.
-(* ag is true.  This is the problem. *)
-compute in ag.
-compute in ab.
-rewrite -/ab.
-set 
-
-
-rewrite -[vertical_intersection _ _ _ _ _]
-compute in ab; rewrite /ab.
-set ac := check_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _ _.
-have : ac = (nil, nil).
-  rewrite /ac /check_circle_event.
-compute in ad.
-do 1 (rewrite fortune_step;
-rewrite expand_event_kind;
-((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
-rewrite /w {w}) ||
-(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
-rewrite /w {w}));
-rewrite expand_res1 expand_res2 expand_res3).
-
-do 1 (rewrite fortune_step;
-rewrite expand_event_kind;
-((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
-rewrite /w {w}) ||
-(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
-rewrite /w {w}));
-rewrite expand_res1 expand_res2 expand_res3).
-do 1 (rewrite fortune_step;
-rewrite expand_event_kind;
-((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
-rewrite /w {w}) ||
-(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
-rewrite /w {w}));
-rewrite expand_res1 expand_res2 expand_res3).
-
 compute.
-rewrite -/result.
-set es := (X in fortune _ _ _ _ _ _ _ _ _ _ _ _ _ X).
-set ss := display_edges es "".
-compute in ss.
-
-Compute ((37184 * 100) / 1664)%Z.
-Compute ((17216 * 100) / 1664)%Z.
-(* Unfold the main functions. *)
-rewrite /main' /main.
-rewrite /small_data.
-rewrite fortune_step.
-set aa := (muln _ 5).
-set p1 := (X in Arc X).
-set a1 := Arc _ _.
-set p2 := ((_ # _), _).
-set p3 := ((_ # _), _).
-set p4 := ((_ # _), _).
-set pp1 := ((_ # _), _).
-set pp2 := ((_ # _), _).
-set pp3 := ((_ # _), _).
-set y2 := - 9 # 1.
-have -> : aa = 35%nat by [].
-set ab := init _ _ _ _ _.
-have -> : ab = q1 by [].
-rewrite /q1 -/p2 -/p3 -/p4 -/a1 -/y2.
-set ac := (false, _, _, _, _).1.1.1.1.
-have -> : ac = false by [].
-rewrite -/handle_site_event'.
-set e := (false, p2, p2, p2, y2).
-set ad := _.1.1.2.
-have -> : ad = p2 by [].
-set ae := handle_site_event' _ _ _ _.
-set p5 := (5 # 1 , - 244 # 2).
-set q3 := [:: (false, p3, p3, p3, 1); (false, pp1, pp1, pp1, 3 # 1);
-              (false, pp3, pp3, pp3, 5 # 1); (false, pp2, pp2, pp2, 8 # 1);
-              (false, p4, p4, p4, 15 # 1)].
-set es1 := [:: (p5, p5, p2, p1, false); (p5, p5, p1, p2, false)].
-have -> : ae = ([:: (p1, false); (p2, false); (p1, false)], es1, q3) by [].
-rewrite -[_.1.1]/(_ :: _) -[_.1.2]/es1 -[_.2]/q3.
-rewrite fortune_step.
-rewrite /q3 [_.1](_ : _ = false); last by []. 
-rewrite -/handle_site_event' -[_.1.1.2]/p3.
-set am := handle_site_event' _ _ _ _.
-set p6 := (-2 # 1, -129 # 20).
-set es4 := [:: (p6, p6, p3, p2, false); (p6, p6, p2, p3, false);
-     (p5, p5, p2, p1, false); (p5, p5, p1, p2, false)].
-set bl3 := [:: (p1, false); (p2, true); (p3, false); (p2, false); (p1, false)].
-set n0 := (4376065783077333040 # 4254992351748947968).
-set q4 := [:: (true, p1, p2, p3, n0); (false, pp1, pp1, pp1, 3 # 1);
-              (false, pp3, pp3, pp3, 5 # 1); (false, pp2, pp2, pp2, 8 # 1);
-              (false, p4, p4, p4, 15 # 1)].
-set q5 := [:: (false, pp1, pp1, pp1, 3 # 1);
-              (false, pp3, pp3, pp3, 5 # 1); (false, pp2, pp2, pp2, 8 # 1);
-              (false, p4, p4, p4, 15 # 1)].
-have -> : am = (bl3, es4, q4) by [].
-rewrite fortune_step.
-change (let res :=
-                 handle_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
-           Qlt_bool Qnatmul Qexp
-            (true, p1, p2, p3, -9 # 1) bl3 es4 q5 in
-       let edges' := res.1.2 in
-       let beach' := res.1.1 in
-       let Q' := res.2 in
-       fortune 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool Qlt_bool Qnatmul
-         Qexp 32 beach' edges' Q' = result).
-set an :=  handle_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
-           Qlt_bool Qnatmul Qexp
-            (true, p1, p2, p3, -9 # 1) bl3 es4 q5.
-set bl4 := [:: (p1, false); (p3, false); (p2, false); (p1, false)].
-set p7 := (-6712 # 2512, -17384 # 2512).
-set p8 := (4 # 1, 143 # 48).
-set p9 := (30192 # 2528, 8368 # 2528).
-set es5 := [:: (p7, p7, p1, p3, false);
-     (p6, p6, p3, p2, false); (p6, p7, p2, p3, true);
-     (p5, p5, p2, p1, false); (p5, p7, p1, p2, true)].
-have -> : an = (bl4, es5, q5) by [].
-rewrite /q5 -[(bl4, _, _).1.1]/bl4 -[(_, es5, _).1.2]/es5 -[_.2]/q5.
-rewrite fortune_step /q5 [(false, _, _, _, _).1.1.1.1](_ : _ = false);
-  last by [].
-rewrite -/handle_site_event' -[_.1.1.2]/pp1.
-set p10 := (6 # 1, -73 # 24).
-set aw := handle_site_event' pp1 _ _ _.
-set bl5 := [:: (p1, false); (p3, false); (p2, true); (pp1, false);
-            (p2, false); (p1, false)].
-set es6 := [:: (p10, p10, pp1, p2, false); (p10, p10, p2, pp1, false); 
-     (p7, p7, p1, p3, false); (p6, p6, p3, p2, false);
-     (p6, p7, p2, p3, true); (p5, p5, p2, p1, false);
-      (p5, p7, p1, p2, true)].
-set n1 := 26584161189426699744 # 7305894126757609472.
-set q6 := [:: (true, p3, p2, pp1, n1); (false, pp3, pp3, pp3, 5 # 1);
-            (false, pp2, pp2, pp2, 8 # 1); (false, p4, p4, p4, 15 # 1)].
-have -> : aw = (bl5, es6, q6) by [].
-rewrite -[_.1.1]/bl5 -[_.1.2]/es6 -[_.2]/q6 fortune_step.
-rewrite [q6](_ : _ = [:: (true, p3, p2, pp1, n1) & behead q6]); last by [].
-rewrite [_.1.1.1.1](_ : _ = true); last by [].
-set p11 := (4816 # 1504, -4224 # 1504).
-set es7 := [:: (p11, p11, p3, pp1, false); (p10, p10, pp1, p2, false);
-      (p10, p11, p2, pp1, true); (p7, p7, p1, p3, false);
-      (p6, p11, p3, p2, true); (p6, p7, p2, p3, true);
-      (p5, p5, p2, p1, false); (p5, p7, p1, p2, true)].
-set q7 := [:: (false, pp3, pp3, pp3, 5 # 1); (false, pp2, pp2, pp2, 8 # 1);
-      (false, p4, p4, p4, 15 # 1)].
-set bl6 :=
-  [:: (p1, false); (p3, false); (pp1, false); (p2, false); (p1, false)].
-set ax := handle_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
-       Qlt_bool
-       Qnatmul Qexp (true, p3, p2, pp1, n1) bl5 es6 (behead q6).
-have -> : ax = (bl6, es7, q7) by [].
-lazy zeta; rewrite -[_.1.1]/bl6 -[_.1.2]/es7 fortune_step.
-rewrite [_.2](_ : _ =  [:: (false, pp3, pp3, pp3, 5 # 1) & behead q7]);
-   last by [].
-rewrite [_.1.1.1.1](_ : _ = false); last by [].
-rewrite -/handle_site_event'.
-set ay := handle_site_event' (false, pp3, pp3, pp3, 5 # 1).1.1.2 bl6 es7
-       (behead q7).
-set p12 := (8 # 1, 12 # 4).
-set n2 := 1369352436103346464 # 187321597000941568.
-set n3 := 662711139305396160 # 30399297484750848.
-have : ay = (nil, nil, nil).
-rewrite /ay /handle_site_event' /handle_site_event.
-set az' := check_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _.
-set az := check_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _ _.
-have : az = (nil, nil).
-rewrite /az /check_circle_event.
-set bb := search_vertical _ _ _ _ _ _ _ _ _ _ _ _ _.
-set bc := insert _ _ _.
-set bd := focal _.
-set be := focal _.
-set bf := focal _.
-set bg := Qsqrt _.
-set bh := push _ _ _ _ _.
-have : bh = nil.
-rewrite /bh push_step.
-set bi := _.2.
-compute in bi.
-rewrite /bi -/p1 -/p2 -/p3 -/p4 -/pp1 -/pp2 -/pp3.
-set bj := geq _ _ _ _ _.
-rewrite /bj /geq.
-
-set bb := (focal _).
-set ba := (_ || _); rewrite [ba](_ : _ = false); last by [].
-compute in ba.
-compute in toto.
-set ba := false_alarm _ _ _ _ _ _.
-compute in az; rewrite /az.
-
-have -> : ay = ([:: (p1, false); (p3, false); (pp1, true); (pp3, false); 
-      (pp1, true); (p2, false); (p1, false)], 
-      [:: (p12, p12, pp3, pp1, false); (p12, p12, pp1, pp3, false);
-      (p11, p11, p3, pp1, false); (p10, p10, pp1, p2, false);
-      (p10, p11, p2, pp1, true); (p7, p7, p1, p3, false);
-      (p6, p11, p3, p2, true); (p6, p7, p2, p3, true);
-      (p5, p5, p2, p1, false); (p5, p7, p1, p2, true)],
-      [:: (true, pp3, pp1, p2, n2); (true, p3, pp1, pp3, n3);
-      (false, pp2, pp2, pp2, 8 # 1); (false, p4, p4, p4, 15 # 1)]) by [].
-
-set toto := geq Qeq_bool Qle_bool Qlt_bool
-     (false, pp2, pp2, pp2, 8 # 1)(false, p4, p4, p4, 15 # 1).
-compute in toto.
-set toto1 := geq Qeq_bool Qle_bool Qlt_bool
-    (true, pp3, pp1, p2, n2) (true, p3, pp1, pp3, n3).
-compute in toto1.
-set toto2 := geq Qeq_bool Qle_bool Qlt_bool
-  (true, p3, pp1, pp3, n3) (false, pp2, pp2, pp2, 8 # 1).
-compute in toto2.
-lazy zeta.
-set bl7 := [:: (p1, false); (p3, false); (pp1, true); (pp3, false); 
-        (pp1, true); (p2, false); (p1, false)].
-set es8 := [:: (p12, p12, pp3, pp1, false); (p12, p12, pp1, pp3, false);
-        (p11, p11, p3, pp1, false); (p10, p10, pp1, p2, false);
-        (p10, p11, p2, pp1, true); (p7, p7, p1, p3, false);
-        (p6, p11, p3, p2, true); (p6, p7, p2, p3, true);
-        (p5, p5, p2, p1, false); (p5, p7, p1, p2, true)].
-set q8 := [:: (true, pp3, pp1, p2, 3 # 1); (true, p3, pp1, pp3, 3 # 1);
-        (false, pp2, pp2, pp2, 8 # 1); (false, p4, p4, p4, 15 # 1)].
-
-set bl6 := [:: (p1, false); (p3, true); (p4, false); (p2, false); (p1, false)].
-set e7 := (true, p1, p3, p4, 1).
-set ax := handle_circle_event 1 Qplus Qmult Qopp Qinv Qsqrt Qeq_bool Qle_bool
-       Qlt_bool
-       Qnatmul Qexp (true, p3, p2, p4, -9 # 1) bl5 es6 [::].
-
-
-
- set p10 := (-42608 # 736, 24464 # 736).
-set bl7 := [:: (p1, false); (p4, false); (p2, false); (p1, false)].
-set p_ABS := (1, 2#1).
-set es8 := [:: (p8, p8, p4, p2, false); (p8, p9, p2, p4, true);
-      (p6, p9, p3, p2, true); (p6, p7, p2, p3, true);
-      (p5, p5, p2, p1, false); (p5, p7, p1, p2, true);
-      (p_ABS, p10, p_ABS, p_ABS, true)].
-set ay := handle_circle_event _ _ _ _ _ _ _ _ _ _ _ _ _ _ _.
-have -> : ay = (bl7, es8, [::]).
-rewrite /ay /handle_circle_event.
-rewrite -/check_circle_event'.
-set az  := (X in check_circle_event' _ _ X.1); rewrite -/az.
-set ba := search_edges _ _ _ _.
-have -> : ba = 3.
-  rewrite /ba /es7 /e7 [_.1.1.1.2](_ : _ = p1); last by [].
-by [].
-compute; rewrite -/p1 -/p2 -/p3 -/p4 -/p5 -/p6 -/p7 -/p8 -/p9.
-  rewrite [_.1.1.2](_ : _ = p3); last by [].
-rewrite /search_edges.
-compute.
-rewrite /ba /search_edges.
-compute in ba.
-
-set ba := set_nth _ _ _ _.
-compute in ba.
-compute in az.
-set az := (X in check_circle_event _ X.1).
-    compute; rewrite -/p1 -/p2 -/p3 -/p4 -/p5 -/p6 -/p7 -/p8 -/p9 -/p10 -/p_ABS.
-    
+reflexivity.
+Qed.
