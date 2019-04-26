@@ -512,6 +512,10 @@ Definition handle_site_event ( p1   : point   ) ( beachline : seq arc )
       let newQ      := BeaQ_r.2                                  in
       (newBeach, newEdges, newQ) .
 
+Definition remove_side_events (l m r : point) (q : seq event) :=
+  filter (fun ev => ~~ (((ev.l === l) && (ev.m === m)) ||
+                        ((ev.m === m) && (ev.r === r)))) q.
+
 Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
                                (edges : seq edge) (Q         : seq event) :
                                ( (seq arc) * ( seq edge) * ( seq event) ) :=
@@ -539,10 +543,8 @@ Definition handle_circle_event (ev    : event   ) (beachline : seq arc  )
   let BeaQ_r    := check_circle_event i_right y0 B_l Q_l             in
   let newBeach  := BeaQ_r.1                                          in
   let newQ      := BeaQ_r.2                                          in
-  (newBeach, newEdges'', newQ) .
-
-
-
+  let newQ'     := remove_side_events l m r newQ                     in
+  (newBeach, newEdges'', newQ') .
 
 Fixpoint fortune  (n     :  nat    ) (beachline : seq arc  )
                   (edges : seq edge) (Q         : seq event) 
@@ -769,11 +771,9 @@ Definition display_final (ps : seq (point Q)) : string :=
      display_points ps (display_edges (snd (fst (main' ps))) "stroke showpage");
      eol])%string.
 
-Compute display_final small_data.
+(* Compute display_final small_data. *)
 
-Compute animate 30 small_data.
-
-(* Compute animate 30 (take 10 small_data). *)
+Compute animate 24 (take 11 small_data).
 
 Definition result :=  main' small_data.
 Compute result.
@@ -845,7 +845,7 @@ rewrite /w {w}) ||
 rewrite /w {w}));
 rewrite expand_res1 expand_res2 expand_res3).
 
-do 4 (rewrite fortune_step;
+do 1 (rewrite fortune_step;
 rewrite expand_event_kind;
 ((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
 rewrite /w {w}) ||
@@ -853,7 +853,7 @@ rewrite /w {w}) ||
 rewrite /w {w}));
 rewrite expand_res1 expand_res2 expand_res3).
 
-do 4 (rewrite fortune_step;
+do 1 (rewrite fortune_step;
 rewrite expand_event_kind;
 ((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
 rewrite /w {w}) ||
@@ -862,6 +862,38 @@ rewrite /w {w}));
 rewrite expand_res1 expand_res2 expand_res3).
 
 do 2 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+do 2 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+do 2 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+do 1 (rewrite fortune_step;
+rewrite expand_event_kind;
+((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
+rewrite /w {w}) ||
+(rewrite -/handle_circle_event'; set w := handle_circle_event' _ _ _ _; compute in w;
+rewrite /w {w}));
+rewrite expand_res1 expand_res2 expand_res3).
+
+do 1 (rewrite fortune_step;
 rewrite expand_event_kind;
 ((rewrite -/handle_site_event'; set w := handle_site_event' _ _ _ _; compute in w;
 rewrite /w {w}) ||
