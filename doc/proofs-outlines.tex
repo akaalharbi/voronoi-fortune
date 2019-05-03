@@ -25,16 +25,24 @@ We would like to show that at each step the algorithm returns a correct result a
 \underline{{\color{gray} \textit{beginning}}} \underline{ {\color{blue} \textit{nth step}}} \underline{{\color{black} \textit{ final}}}
 
 \subsubsection{{\color{gray} \textit{beginning}}}
-fff
+TBD
 \subsubsection{{\color{blue} nth step}}
-{\color{red} \tt - Move the terms to below to definitions \newline
-\tt - Define beachline as an inductive, draws the similarity between its definition and balanced brackets \newline
+We may consider everything as a function of the sweepline position. 
+\begin{itemize}
+    \item The last step cells must be a subset of the current cells
+    \item Let $B = \left[a_1, a_2, \dots, a_n \right]$ be a beachline then $\left(a_1, a_2\right), \left(a_2, a_3\right) \dots$ be the sequence of the arcs intersections, then this sequence must be ordered as well.
+    \begin{itemize}
+        \item A circle event happens when the sweepline moves and a two arcs intersection violates the property above
+        \item There is only one position where we can add a new site without violating the order condition   
+        \item If two focal points are neighbors in the beachline then then they are adjacent sites in the voronoi diagram.
+        {\b Proof}: TODO 
+        
+        
+    \end{itemize}
+    \item each item $p_b$ in the beach correspond to a cell. The distance of a point $p$ in this region to any other site is the distance to a boundary edge or arc\_line plus something. Considering the whole sweepline as a site and having established we can't have two sites in these constructed cells we can see that all points in this region is indeed to closer to $p_b$
+\end{itemize}
+From correct beach to a l; 
 
-- Write how to move from a beachline to show the voronoi diagram up to the beachline is correct  }
-
-
-We divide the plane into three regions :
- 
  \textbf{Events}
     \begin{itemize}
         \item \textit{Site even}t :
@@ -142,6 +150,10 @@ We assume that the algorithm has processed n events. We would like to check if w
 \subsection{Bound on events length} If the beach-line is of length after a site event then at most there will be $n-2$ circle events. Thus, the queue length can't exceed $n^2$ where is the number of sites. Tightening this bound has no almost effect on the performance as it sole role to tell Coq the main function's recursion will terminate.
 
 \section{Train of thoughts}
+\subsection{criteria for the beachline}
+The criteria for the beachline is that 
+
+\subsection{random}
 We need first to define voronoi diagram. A plausible definition is the union of all sites cells where $cell(p)= \bigcap_{q \in sites, q\not = p} H(p, q) $ where 
 $$H(p, q) = \left\{(x,y) : d\left(p,(x, y) \right) \leq  d\left(q,(x, y) \right) \right\}$$ 
 Another definition is by edges and the closest sites. we need they are equivalent.
