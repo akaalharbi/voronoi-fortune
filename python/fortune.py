@@ -506,6 +506,6 @@ if __name__ == '__main__':
     complete_edges = [edge[1] for edge in segments if edge[-1] == True ]
     with open("edges", 'w') as edges:
         for e in complete_edges:
-            string = str(e[0][0]) + " " + str(e[0][1]) + " "\
+            string = str(e[0][0]) + " " + str(e[0][1]) + " moveto "\
                     + str(e[1][0]) + " " + str(e[1][1])
-            edges.write(string+"\n")
+            edges.write(string+" lineto\n")

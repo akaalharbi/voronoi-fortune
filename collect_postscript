@@ -1,0 +1,14 @@
+#!/bin/perl
+
+$out = 1;
+
+while (<>) {
+  if (/.*(%!PS-adobe-2)/) {
+  print "$1\n";
+  $out = 0
+  } elsif (/%string/) {
+    exit 0;
+  } elsif (($out == 0)) {
+    print;
+  }
+}
