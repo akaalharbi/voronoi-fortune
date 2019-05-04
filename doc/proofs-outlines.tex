@@ -19,6 +19,16 @@
 %---------------%
 \begin{document}
 
+We check prove that each function is correct see section 3. 
+
+We check they integrate correctly. 
+
+ - The sites queue should not have repetition. 
+ The end must be correct
+
+- Ordered intersection is not enough to say a beachline is correct as we can remove some arcs while not violating the order property! Solution maintain a list of active sites
+- The closest vertical intersection means an adjacent site. 
+- The beachline will cover all the adjacant sites
 \section{Goal}
 We would like to show that at each step the algorithm returns a correct result and at the end it returns a complete result.
 \subsection{Strategy}
@@ -112,15 +122,21 @@ Example let $ B := \left[a, b, c, b, d, x, d, b, e, b, a \right]$ then $ab$ will
 
 - For each consecutive elements in the beachline, make sure there is an edge and the two ends and there are no site that ...
 
+- 
 
 
 \section{Functions}
+
+For edges $e = \left(p_1, p_2\right), e' = \left(p'_1, p'_2\right)$ then $e' \subseteq e \Longleftrightarrow $
+
+
 {\color{red} \tt - Go through all functions}
 \subsection{sequence functions}
 \begin{itemize}
     \item {\tt insert} check that nth position of the result is the element that are inserted at the nth position
     \item {\tt search\_beach} Check that nth position of the beachline is p2
     \item {\tt search\_edges } verify that the returned edges has the two points as sites. Bonus, it's the unique edge that satisfies this property. 
+    \item {\tt arc\_index}
     
 \end{itemize}
 \subsection{Geometric Functions}
@@ -141,8 +157,12 @@ Let $p_1, p_2$ be two arcs and their intersections are $a_1, b_1$ then as the sw
 The main method is to show that a solution belongs to two curves which boils down to algebraic manipulations.
 
 \subsection{Event Helpers}
+
 \subsubsection{Check\_circle\_event}
-- Check that it will 
+
+- Check that if it alters the queue then moving the sites in question to the position mentioned in the event then we have to reomve an arc ( ignoring all other sites). Thus a correct beachline.
+
+
 
 \section{Events}
 We assume that the algorithm has processed n events. We would like to check if we have given a correct decomposition then preforming a site event or a circle event will preserve the correctness of the decomposition up to the cliff.
