@@ -9,6 +9,7 @@ Fortune's algorithm is a sweep line algorithm to construct the Voronoi diagram o
 	* [`progress `](doc/progress.md)  contains an overview of the small progress achieved over  short periods.
 	* [`resources`](doc/resources.md) a bibliography  for learning [Coq](https://coq.inria.fr/) and Fortune's algorithm.
 	*  [`plan`](doc/plan.md) high levle goals and their deadlines 
-	* [`proofs outlines`](doc/proofs-outlines.tex) a general for proving the correctness of the algorithm.
+	* [`proofs outlines`](doc/proofs-outlines.tex)  a sketch  of a proof the correctness of the algorithm.
+	* [`polynomial-equalities-experiment`](doc/polynomial-equalities-experiment.v) A basic demo of how to prove identities in a [ring](https://en.wikipedia.org/wiki/Ring_(mathematics)) using the [mathematical components](http://math-comp.github.io/math-comp/) library.
 * [`python/`](python/) a python implementation of Fotune's algorithm.
 	
