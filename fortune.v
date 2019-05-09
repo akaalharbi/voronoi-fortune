@@ -14,26 +14,26 @@ Section ab1.
 
 (* The following variables are used to make the code independent of
   mathematical components. *)
-Variables (R : Type) (one zero : R)
+Variables (R : rcfType) (one zero : R)
   (add mul : R -> R -> R) (opp inv sqrtr : R -> R).
 Variables (eq ler ltr : R -> R -> bool) (natr_mul exp : R -> nat -> R).
 
-
-Notation "x + y" := (add x y) : a_scope.
-Notation "x * y" := (mul x y) : a_scope.
-Notation "x - y" := (add x (opp y)) : a_scope.
-Notation "x / y" := (mul x (inv y)) : a_scope.
+(* 
+Notation "x + y" := (add x y) : ring_scope.
+Notation "x * y" := (mul x y) : ring_scope.
+Notation "x - y" := (add x (opp y)) : ring_scope.
+Notation "x / y" := (mul x (inv y)) : ring_scope.
 Notation "x >= y" := (ler y x) : bool_scope.
 Notation "x <= y" := (ler x y) : bool_scope.
 Notation "x < y" := (ltr x y) : bool_scope.
 Notation "x > y" := (ltr y x) : bool_scope.
 Notation "x == y" := (eq x y) : bool_scope.
-Notation "x *+ n" := (natr_mul x n) : a_scope.
-Notation "x ^ n" := (exp x n) : a_scope.
-Notation "- x" := (opp x) : a_scope.
-Notation "n %:R" := (natr_mul one n) : a_scope.
-
-Open Scope a_scope.
+Notation "x *+ n" := (natr_mul x n) : ring_scope.
+Notation "x ^ n" := (exp x n) : ring_scope.
+Notation "- x" := (opp x) : ring_scope.
+Notation "n %:R" := (natr_mul one n) : ring_scope.
+ *)
+Open Scope ring_scope.
 
 (*****************************************************************************)
 (* This file contains an implementation of Fortune's algorithm which follows *)
@@ -76,7 +76,7 @@ Definition point_eq (p1 p2 : point) : bool :=
   (p1.x == p2.x) && (p1.y == p2.y).
 
 Notation "p1 === p2" := (point_eq p1 p2)
-  (at level 70, no associativity) : a_scope.
+  (at level 70, no associativity) : ring_scope.
 
 (* Arc *)
 Definition arc   : Type := (point * bool)%type.
@@ -195,7 +195,7 @@ Fixpoint remove T (i : nat) (s : seq T) : seq T :=
   | 0%nat , _     => [::]
   |S n, h::t => h::remove n t
   | _ , _    => [::]
-  end.  
+  end.
 
 
 Fixpoint search_3  (p1 p2 p3 : point) (s : seq point) {struct s}: nat :=
@@ -625,6 +625,33 @@ Fixpoint add_infinites (bl : seq arc) (es : seq edge) : seq edge :=
   end.
 
 End ab1.
+(* ------------------------------------------------------------------------- *)
+(*                          PROOFS                                           *)
+Close Scope Q_scope.
+Section ab2.
+
+Variable R : rcfType.
+Open Scope ring_scope.
+
+(* belongs function, take a point p and curve  c, and returns  p in c       *)
+(* Parabolas as equal distance between a point and a directrix              *)
+(*                                                                          *)
+(* Intersection between two parabolas mean an equidistant from 3 objects    *)
+
+Lemma sqrP  (x y : R) : (x - y)^2 = ( y-x)^2.
+Proof. rewrite /exprz. 
+Search (_ ^+ _) in ssralg.
+Search (_ ^+ _) (- _).
+rewrite -sqrrN.
+Search (- (_ - _)).
+by rewrite opprB.
+rewrite !exprS !expr0 !mulr1.
+rewrite GRing.Exp.
+
+End ab2.
+(* ------------------------------------------------------------------------- *)
+(*                         COMPUTATIONS                                      *)
+
 
 (* Now we shall make the code rely on rational computations. *)
 
