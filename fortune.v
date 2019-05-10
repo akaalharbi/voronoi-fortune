@@ -72,6 +72,7 @@ Definition Point(x y : R) : point := (x, y).
 Notation "p .x" := (fst p) ( at level 60).
 Notation "p .y" := (snd p) ( at level 60).
 
+
 Definition point_eq (p1 p2 : point) : bool :=
   (p1.x == p2.x) && (p1.y == p2.y).
 
@@ -176,7 +177,7 @@ Definition emB  : seq arc   := [::]. (* Empty beachline      *)
 
 
 
-(* -------------------------- seq functions -------------------------------- *)
+(* ========================== seq functions ================================ *)
 (* They always return an index or a seq of the same type                     *)
 
 Fixpoint insert T (a : T) (s : seq T) (i : nat)  : seq T :=
@@ -460,7 +461,7 @@ Definition false_alarm (ind : nat) ( beachline : seq arc) ( Q : seq event) :
 
 
 
-(*-----------------------------  Main functions  -------------------------- *)
+(* ========================== Main functions  ============================= *)
 
 
 Definition special_case (ind       :     nat)   (p3    : point   )
@@ -624,19 +625,79 @@ Fixpoint add_infinites (bl : seq arc) (es : seq edge) : seq edge :=
   | _ => es
   end.
 
-End ab1.
-(* ------------------------------------------------------------------------- *)
+(*****************************************************************************)
 (*                          PROOFS                                           *)
-Close Scope Q_scope.
+(* ==================== distance function properties ======================= *)
+
+Definition dist (p1 p2 : point )  := ((p1.x) - (p2.x))^2 + ((p1.y) - (p2.y))^2.
+(* ------------------------ auxiliairy  lemmas ----------------------------- *)
+Search (Num.sqrt _).
+Search  "sqr_".
+(* sqr_ge0 : Square of a real number is always positive            *)
+(* Search (0 <= _ + _).*)
+(* addr_ge0 : Addition of two positive numbers is a positive number  *)
+(* Addition of two numbers is a number *)
+Search _  (0 < _) .
+Lemma addrp0 ( x y : R) : 0 <= x -> 0 <= y -> x+y = 0 -> x = 0 /\ y = 0.
+Proof. 
+  move=> x0 y0 xy0. split.
+  Search _ "ler" "P" 0.
+  (* STUCK! TODO *) Admitted.
+
+(* --------------------- dist is a metric function ------------------------- *)
+Print rcfType.
+Lemma distPos ( x y : point ) : ( dist x y) >= 0.
+Proof.  
+(* Basic setup *)
+  rewrite /(dist x y).
+  set X :=((x .x) - (y .x)); set Y :=  ((x .both) - (y .both)) .
+  rewrite !(addr_ge0). (* we're done if X^2, Y^2 >= 0 *)
+  - by[]. (* dummy goal *)
+  - apply sqr_ge0.
+  - apply sqr_ge0.
+  Qed.
+
+Check sqr_ge0.
+Search (0 <= _ ^+ 2).
+Locate "=".
+
+
+Lemma distId (x y : point) : (dist x y = 0) -> x = y.
+Proof.
+  
+  rewrite /(dist x y).
+  set X :=((x .x) - (y .x))^2; set Y :=  ((x .both) - (y .both))^2.
+  intros H.
+
+  (* have Xp : (X >= 0); have Yp : (Y >= 0). for some reason we lose Yp! *) 
+  have Xp : (X >= 0); have Yp : (Y >= 0).
+  - by rewrite (sqr_ge0). by rewrite (sqr_ge0). by rewrite (sqr_ge0).
+
+  have X0 : (X = 0).
+  move: Xp Yp H. apply addrp0.
+  have Y0 : (Y = 0).
+  move: Xp Yp H. apply addrp0.
+  Abort.
+
+
+
+End ab1.
+
+
+(*          is this section important?                                       *)
+(* Close Scope Q_scope.
 Section ab2.
 
 Variable R : rcfType.
 Open Scope ring_scope.
-
 (* belongs function, take a point p and curve  c, and returns  p in c       *)
 (* Parabolas as equal distance between a point and a directrix              *)
 (*                                                                          *)
 (* Intersection between two parabolas mean an equidistant from 3 objects    *)
+
+Definition dist (p1 p2 : point ) : R := (p1.x - p2.x)^2.
+Lemma eqMidP ( x y : point) : 
+
 
 Lemma sqrP  (x y : R) : (x - y)^2 = ( y-x)^2.
 Proof. rewrite /exprz. 
@@ -649,6 +710,7 @@ rewrite !exprS !expr0 !mulr1.
 rewrite GRing.Exp.
 
 End ab2.
+ *)
 (* ------------------------------------------------------------------------- *)
 (*                         COMPUTATIONS                                      *)
 
