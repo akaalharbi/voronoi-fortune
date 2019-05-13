@@ -638,15 +638,40 @@ Search  "sqr_".
 (* addr_ge0 : Addition of two positive numbers is a positive number  *)
 (* Addition of two numbers is a number *)
 Search _  (0 < _) .
-Lemma addrp0 ( x y : R) : 0 <= x -> 0 <= y -> x+y = 0 -> x = 0 /\ y = 0.
-Proof. 
-  move=> x0 y0 xy0. split.
-  Search _ "ler" "P" 0.
-  (* STUCK! TODO *) Admitted.
 
+
+Lemma addr_pos_eq0 ( x y : R) : 0 <= x -> 0 <= y -> x+y = 0 -> x = 0 /\ y = 0.
+Proof. 
+  move=> x0 y0 s0.
+  have [ /eqP x_is_0 | x_not_0 ] := boolP (x == 0).
+
+  (* case1:  x = 0 *)
+  move: s0.
+  by rewrite x_is_0 add0r.
+  (* case2: 0<x *)
+  Search "ler" "V".
+  move: x0 y0 s0.
+  rewrite ler_eqVlt eq_sym. (* Search (?x = ?y) (?y = ?x) "sym".  *)
+  rewrite (negbTE x_not_0) /=. (* use x_not_0 in the goal, then simplifiy *)
+  move=> x0 y0 s0.
+  Search _ (0 < _) "ltr".
+  move: x0.
+  rewrite -(ltr_addr y) (s0). (* ltr_addr : a, b -> bool here a is y *)
+  (* 0 > y  and 0 <= y is not an obvious contraditction! *)
+  Search _ "ltr" (_ < _ ) (~~ _) (_ <= _). 
+  rewrite ltrNge y0 /=.
+  by[]. Qed .
+
+
+
+Lemma sqrDC (x y : R) : (x-y)^+2 = (y-x)^+2.
+Proof. rewrite !(expr0, exprS, mulrS, mulr1).
+       rewrite -opprB mulrNN. by[].
+       Qed.
+ 
 (* --------------------- dist is a metric function ------------------------- *)
 Print rcfType.
-Lemma distPos ( x y : point ) : ( dist x y) >= 0.
+Lemma dist_point_pos ( x y : point ) : ( dist x y) >= 0.
 Proof.  
 (* Basic setup *)
   rewrite /(dist x y).
@@ -662,24 +687,46 @@ Search (0 <= _ ^+ 2).
 Locate "=".
 
 
-Lemma distId (x y : point) : (dist x y = 0) -> x = y.
+Lemma dist_point_Id (x y : point) : (dist x y = 0) -> x = y.
 Proof.
   
   rewrite /(dist x y).
   set X :=((x .x) - (y .x))^2; set Y :=  ((x .both) - (y .both))^2.
-  intros H.
+  intros S.
 
-  (* have Xp : (X >= 0); have Yp : (Y >= 0). for some reason we lose Yp! *) 
+  (* have Xp : (X >= 0); have Yp : (Y >= 0). for some reason we loose Yp! *) 
   have Xp : (X >= 0); have Yp : (Y >= 0).
   - by rewrite (sqr_ge0). by rewrite (sqr_ge0). by rewrite (sqr_ge0).
+  have X_Y_are_0 : (X = 0) /\  (Y = 0).
+  - move: Xp Yp S.  apply addr_pos_eq0.
+  have X_is_0 : ( X = 0).
+  - move: X_Y_are_0. apply proj1.
+  have Y_is_0 : ( Y = 0).
+  - move: X_Y_are_0. apply proj2.
 
-  have X0 : (X = 0).
-  move: Xp Yp H. apply addrp0.
-  have Y0 : (Y = 0).
-  move: Xp Yp H. apply addrp0.
-  Abort.
+  move: X_Y_are_0 Xp Yp S; move=> _ _ _ _. (* clean assumptions *)
+  Search "sqrtr" (_ = _ ). (* sqrt_sqr *)
+  
+  (* Y = 0 => x.y = y.y *)
+  - move:  X_is_0 Y_is_0; rewrite /X.
+  - Search "expfz".
+  - move=> /eqP ; rewrite expfz_eq0 /=.
+  - rewrite subr_eq0. move=> /eqP x_coord_eq. (* Search "eq" (_ - _) (_ = _). *)
+  (* Y = 0 => x.y = y.y *)
+  - rewrite /Y; move=> /eqP.
+  - rewrite expfz_eq0 /= subr_eq0. move=>  /eqP .
+  move: X Y; move=> _ _.
+  move: x_coord_eq.
+  Check (fun (x y : point) => x = y).
+  
+  (* Ninja command: by case: x; case: y => /= ? ? ? ? -> ->. *)
+  (* if the function defined with match then casef is a good tactic *)
+  case: x; case: y. rewrite /=. move=> ? ? ? ? -> ->. by[].
+  Qed.
 
 
+Lemma dist_point_C (p1 p2 : point) : dist p1 p2 = dist p2 p1.
+Proof. rewrite /dist . (* TODO complete rewrite sqrDC. *) Abort.  
 
 End ab1.
 
