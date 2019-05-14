@@ -681,6 +681,30 @@ Proof.
   - apply sqr_ge0.
   Qed.
 
+
+Definition R' := (R : Type).
+
+Definition mul : R' -> R' -> R' := @GRing.mul _.
+Definition add : R' -> R' -> R' := @GRing.add _.
+Definition sub : R' -> R' -> R' := (fun x y => x - y).
+Definition opp : R' -> R' := @GRing.opp _.
+Definition zero : R' := 0.
+Definition one : R' := 1.
+
+Definition R2_theory :=
+  @mk_rt R' zero one add mul sub opp
+   (@eq R')
+   (@add0r R) (@addrC R) (@addrA R) (@mul1r R) (@mulrC R)
+     (@mulrA R) (@mulrDl R) (fun x y : R => erefl (x - y)) (@addrN R).
+
+Add Ring R2_Ring : R2_theory.
+
+(* This tactic automates proving identities in a ring                        *)
+Ltac mc_ring :=
+rewrite /exprz ?mxE /= ?(expr0, exprS, mulrS, mulr0n) -?[@GRing.add _]/add -?[@GRing.mul _]/mul
+   -?[@GRing.opp _]/opp -?[1]/one -?[0]/zero;
+match goal with |- @eq ?X _ _ => change X with R' end; try ring.
+
 Check sqr_ge0.
 Search (0 <= _ ^+ 2).
 Locate "=".
@@ -688,8 +712,11 @@ Locate "=".
 
 Lemma dist_point_Id (x y : point) : (dist x y = 0) -> x = y.
 Proof.
-  
-  rewrite /(dist x y).
+  rewrite /dist /exprz.
+  rewrite [X in X + _](_ : _ = (x .x) ^ 2 - 2%:R * (x .x) * (y .x) + (y .x)^2);
+    last first.
+  mc_ring.
+
   set X :=((x .x) - (y .x))^2; set Y :=  ((x .both) - (y .both))^2.
   intros S.
 
