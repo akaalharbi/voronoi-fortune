@@ -14,9 +14,7 @@ Section ab1.
 
 (* The following variables are used to make the code independent of
   mathematical components. *)
-Variables (R : rcfType) (one zero : R)
-  (add mul : R -> R -> R) (opp inv sqrtr : R -> R).
-Variables (eq ler ltr : R -> R -> bool) (natr_mul exp : R -> nat -> R).
+Variables (R : rcfType).
 
 (* 
 Notation "x + y" := (add x y) : ring_scope.
@@ -114,12 +112,13 @@ Notation "p .l"   := (snd (fst (fst (fst p)))) ( at level 82). (* Final point *)
 Notation "p .cir" := (fst (fst (fst (fst p)))) ( at level 82). (* Start point *)
 (* cir  is an unfortunate notation *)
 
+
 Definition geq (e1 e2 : event ) : bool :=
   match e1.cir, e2.cir with
     false, false =>
-    ltr (e2.m.y) (e1.m.y) || 
-    (eq (e1.m.y) (e2.m.y) && ler (e1.m.x) (e2.m.x))
-  | _, _ => ler (e2.swp) (e1.swp)
+    ((e2.m.y) < (e1.m.y)) ||
+    (((e1.m.y) == (e2.m.y)) && ((e1.m.x) <= (e2.m.x)))
+  | _, _ => (e2.swp) <= (e1.swp)
   end.
 
 (* Priority Queue *)
