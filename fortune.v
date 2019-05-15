@@ -626,9 +626,36 @@ Fixpoint add_infinites (bl : seq arc) (es : seq edge) : seq edge :=
 
 (*****************************************************************************)
 (*                          PROOFS                                           *)
-(* ==================== distance function properties ======================= *)
+(* ======================= tactics ========================================= *)
+Definition R' := (R : Type).
 
-Definition dist (p1 p2 : point )  := ((p1.x) - (p2.x))^2 + ((p1.y) - (p2.y))^2.
+Definition mul : R' -> R' -> R' := @GRing.mul _.
+Definition add : R' -> R' -> R' := @GRing.add _.
+Definition sub : R' -> R' -> R' := (fun x y => x - y).
+Definition opp : R' -> R' := @GRing.opp _.
+Definition zero : R' := 0.
+Definition one : R' := 1.
+
+Definition R2_theory :=
+  @mk_rt R' zero one add mul sub opp
+   (@eq R')
+   (@add0r R) (@addrC R) (@addrA R) (@mul1r R) (@mulrC R)
+     (@mulrA R) (@mulrDl R) (fun x y : R => erefl (x - y)) (@addrN R).
+
+Add Ring R2_Ring : R2_theory.
+
+(* This tactic automates proving identities in a ring                        *)
+Ltac mc_ring :=
+rewrite /exprz ?mxE /= ?(expr0, exprS, mulrS, mulr0n) -?[@GRing.add _]/add -?[@GRing.mul _]/mul
+   -?[@GRing.opp _]/opp -?[1]/one -?[0]/zero;
+match goal with |- @eq ?X _ _ => change X with R' end; try ring.
+
+(* ==================== distance function properties ======================= *)
+Definition dist (p1 p2 : point )  := 
+          sqrtr ( ((p1.x) - (p2.x))^2 + ((p1.y) - (p2.y))^2).
+Definition dist_sq (p1 p2 : point )  := 
+           ((p1.x) - (p2.x))^2 + ((p1.y) - (p2.y))^2.
+
 (* ------------------------ auxiliairy  lemmas ----------------------------- *)
 Search (Num.sqrt _).
 Search  "sqr_".
@@ -667,70 +694,69 @@ Lemma sqrDC (x y : R) : (x-y)^+2 = (y-x)^+2.
 Proof. rewrite !(expr0, exprS, mulrS, mulr1).
        rewrite -opprB mulrNN. by[].
        Qed.
- 
+
+(* mathcomp should add more powerfull lemmas *)
+(* e.g. x<=y <-> x+t <= y+t                  *)
+
+Lemma leqr_trans (x y z : R) : x <= y -> y <= z -> x <= z.
+Proof. 
+  intros H1 H2. rewrite -subr_ge0 in H1. rewrite -subr_ge0 in H2.
+  rewrite -subr_ge0.
+
+  rewrite [0](_ : _ = y - y).
+  rewrite -subr_ge0.
+  rewrite [( z - x - (y - y))](_ : _ = (z-y) + (y - x)).
+  move: H2 H1. set h1 := (z-y); set h2 := (y-x). move=> H1 H2.
+  rewrite addr_ge0 /=.
+
+  by[]. by[]. by[].
+
+  mc_ring. mc_ring. Qed.
+
+
 (* --------------------- dist is a metric function ------------------------- *)
 Print rcfType.
 Lemma dist_point_pos ( x y : point ) : ( dist x y) >= 0.
 Proof.  
 (* Basic setup *)
-  rewrite /(dist x y).
+  by rewrite /(dist x y) sqrtr_ge0.
+(*  (* this was used to prove dist_sq is positive *)
+  Search "sqrt" "gt".
+  congr (sqrtr _).
   set X :=((x .x) - (y .x)); set Y :=  ((x .both) - (y .both)) .
   rewrite !(addr_ge0). (* we're done if X^2, Y^2 >= 0 *)
   - by[]. (* dummy goal *)
   - apply sqr_ge0.
   - apply sqr_ge0.
-  Qed.
+ *)  Qed.
 
-
-Definition R' := (R : Type).
-
-Definition mul : R' -> R' -> R' := @GRing.mul _.
-Definition add : R' -> R' -> R' := @GRing.add _.
-Definition sub : R' -> R' -> R' := (fun x y => x - y).
-Definition opp : R' -> R' := @GRing.opp _.
-Definition zero : R' := 0.
-Definition one : R' := 1.
-
-Definition R2_theory :=
-  @mk_rt R' zero one add mul sub opp
-   (@eq R')
-   (@add0r R) (@addrC R) (@addrA R) (@mul1r R) (@mulrC R)
-     (@mulrA R) (@mulrDl R) (fun x y : R => erefl (x - y)) (@addrN R).
-
-Add Ring R2_Ring : R2_theory.
-
-(* This tactic automates proving identities in a ring                        *)
-Ltac mc_ring :=
-rewrite /exprz ?mxE /= ?(expr0, exprS, mulrS, mulr0n) -?[@GRing.add _]/add -?[@GRing.mul _]/mul
-   -?[@GRing.opp _]/opp -?[1]/one -?[0]/zero;
-match goal with |- @eq ?X _ _ => change X with R' end; try ring.
 
 Check sqr_ge0.
 Search (0 <= _ ^+ 2).
 Locate "=".
 
 
-Lemma dist_point_Id (x y : point) : (dist x y = 0) -> x = y.
+Lemma dist_sq_point_Id (p1 p2 : point) : (dist_sq p1 p2 = 0) -> p1 = p2.
 Proof.
-  rewrite /dist /exprz.
-  rewrite [X in X + _](_ : _ = (x .x) ^ 2 - 2%:R * (x .x) * (y .x) + (y .x)^2);
+  rewrite /dist.
+  (*   rewrite [X in X + _](_ : _ = (x .x) ^ 2 - 2%:R * (x .x) * (y .x) + (y .x)^2);
     last first.
   mc_ring.
-
-  set X :=((x .x) - (y .x))^2; set Y :=  ((x .both) - (y .both))^2.
+  *)
+  set X :=((p1 .x) - (p2 .x))^2; set Y :=  ((p1 .both) - (p2 .both))^2.
   intros S.
 
-  (* have Xp : (X >= 0); have Yp : (Y >= 0). for some reason we loose Yp! *) 
-  have Xp : (X >= 0); have Yp : (Y >= 0).
+  (* have X_pos : (X >= 0); have Y_pos : (Y >= 0). for some reason we loose Y_pos! *) 
+  have X_pos : (X >= 0); have Y_pos : (Y >= 0).
   - by rewrite (sqr_ge0). by rewrite (sqr_ge0). by rewrite (sqr_ge0).
   have X_Y_are_0 : (X = 0) /\  (Y = 0).
-  - move: Xp Yp S.  apply addr_pos_eq0.
+  - move: X_pos Y_pos S.  apply addr_pos_eq0.
   have X_is_0 : ( X = 0).
   - move: X_Y_are_0. apply proj1.
   have Y_is_0 : ( Y = 0).
   - move: X_Y_are_0. apply proj2.
 
-  move: X_Y_are_0 Xp Yp S; move=> _ _ _ _. (* clean assumptions *)
+  move: X_Y_are_0 X_pos Y_pos S; move=> _ _ _ _. (* clean assumptions *)
   Search "sqrtr" (_ = _ ). (* sqrt_sqr *)
   
   (* Y = 0 => x.y = y.y *)
@@ -747,12 +773,81 @@ Proof.
   
   (* Ninja command: by case: x; case: y => /= ? ? ? ? -> ->. *)
   (* if the function defined with match then casef is a good tactic *)
-  case: x; case: y. rewrite /=. move=> ? ? ? ? -> ->. by[].
+  case: p1; case: p2. rewrite /=. move=> ? ? ? ? -> ->. by[].
   Qed.
 
+Lemma dist_point_Id (p1 p2 : point)  : (dist p1 p2 = 0) -> p1 = p2.
+Proof.
+  (* setup *)
+  rewrite /dist . move /eqP.
+  Search "sqrt" "0" (Num.sqrt). rewrite -sqrtr0 eqr_sqrt. move /eqP. 
+  (* if relation( sqrt(x) ) then probably relation(x) *)
+  rewrite [(((p1 .x) - (p2 .x)) ^ 2 + ((p1 .both) - (p2 .both)) ^ 2 )]
+  (_ : _ =  (dist_sq p1 p2)).
 
-Lemma dist_point_C (p1 p2 : point) : dist p1 p2 = dist p2 p1.
-Proof. rewrite /dist . (* TODO complete rewrite sqrDC. *) Abort.  
+  move: p1 p2. exact dist_sq_point_Id.
+
+  rewrite /dist_sq. by[]. (* dist_sq p1 p2 = expression given above *) 
+
+  (* Prove everyting is positive *)
+  set X :=((p1 .x) - (p2 .x))^2; set Y :=  ((p1 .both) - (p2 .both))^2.
+  have X_pos : (X >= 0); have Y_pos : (Y >= 0).
+  - by rewrite (sqr_ge0). by rewrite (sqr_ge0). by rewrite (sqr_ge0).
+  rewrite addr_ge0.
+  by[]. by[]. by[]. by[].
+  Qed.
+
+Lemma dist_sym (p1 p2 : point) : dist p1 p2 = dist p2 p1.
+Proof.  unfold dist. congr (Num.sqrt _). mc_ring. Qed.
+
+
+Lemma triangle_inequality (p1 p2 p3 : point) :  
+(dist p1 p3) <= (dist p1 p2 ) + (dist p2 p3).
+Search "dist".
+Proof. Abort. (* will be proved when needed *)
+
+
+(* ---------- distance between a point and a horizontal line --------------- *)
+Definition sweep (l : R*point) : R := ((snd l) .y).
+(* Given a line, return its y coordinate *)
+
+
+Definition dist_p_swp (p : point) (l : R*point) := (* d(p1:point , l:line) *)
+(Num.norm (p.y - (sweep l))) .
+
+
+
+Lemma dist_l_ge (p : point) (l1 l2 : R*point) : 
+(* Any sweepline above the current sweepline is further awasy *)
+      p .y <= (sweep l1)
+      -> (sweep l1) <= (sweep l2)
+      -> (dist_p_swp p l1) <= (dist_p_swp p l2).
+Proof.
+  unfold dist_p_swp.
+  Search "norm" (_ <= _) (_ = _). (* ger0_norm  *)
+  Search _ (0 <= _) (_ <= _). (* subr_ge0 *)
+  set p_y := p .both; set swp1 := sweep l1; set swp2 := sweep l2.
+  Search _  "trans".
+  intros H1 H2. 
+  have H3 : p_y <= swp2.
+  move: H1 H2. apply leqr_trans.
+  rewrite ger0_norm. rewrite ler0_norm.  
+  rewrite -subr_ge0.
+  rewrite [- (p_y - swp2) - (p_y - swp1)](_ : _ =  swp2 - swp1).
+  by rewrite subr_ge0.
+
+  rewrite !opprB. 
+  
+  congr (swp2 _). Search "opp" (-_)(-_).
+   Search _ (_ + _ <= _ + _).
+  apply leqr_trans.  Search "leq". ler_eqVlt le_xy
+
+ltr_trans
+
+(* ------------------------------------------------------------------------- *)
+
+
+
 
 End ab1.
 
