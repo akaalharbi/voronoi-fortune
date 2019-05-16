@@ -716,7 +716,7 @@ Proof.
 
 (* --------------------- dist is a metric function ------------------------- *)
 Print rcfType.
-Lemma dist_point_pos ( x y : point ) : ( dist x y) >= 0.
+Lemma dist_point_pos ( x y : point ) : 0 <= ( dist x y) .
 Proof.  
 (* Basic setup *)
   by rewrite /(dist x y) sqrtr_ge0.
@@ -818,7 +818,7 @@ Definition dist_p_swp (p : point) (l : R*point) := (* d(p1:point , l:line) *)
 
 
 Lemma dist_l_ge (p : point) (l1 l2 : R*point) : 
-(* Any sweepline above the current sweepline is further awasy *)
+(* Any sweepline above the current sweepline is further away *)
       p .y <= (sweep l1)
       -> (sweep l1) <= (sweep l2)
       -> (dist_p_swp p l1) <= (dist_p_swp p l2).
@@ -830,19 +830,74 @@ Proof.
   Search _  "trans".
   intros H1 H2. 
   have H3 : p_y <= swp2.
-  move: H1 H2. apply leqr_trans.
-  rewrite ger0_norm. rewrite ler0_norm.  
-  rewrite -subr_ge0.
-  rewrite [- (p_y - swp2) - (p_y - swp1)](_ : _ =  swp2 - swp1).
+  - move: H1 H2. apply leqr_trans.
+  rewrite ler0_norm. rewrite ler0_norm.  
+  rewrite -subr_ge0 opprK opprB.
+  rewrite [swp2 - p_y + (p_y - swp1)](_ : _ =  swp2 - swp1).
   by rewrite subr_ge0.
 
-  rewrite !opprB. 
+  mc_ring. Search (_ <= 0).
+  by rewrite subr_le0.
+  by rewrite subr_le0.
+  Qed.
   
-  congr (swp2 _). Search "opp" (-_)(-_).
-   Search _ (_ + _ <= _ + _).
-  apply leqr_trans.  Search "leq". ler_eqVlt le_xy
+Search "sqr" "eq". (* eqr_sqrt *)
 
-ltr_trans
+Lemma dist_p_l_p_ge (p1 p2 : point) (l : R*point) : 
+   (p1 .y   <= (sweep l) )
+-> (sweep l <=  (p2 .y)  )
+-> (dist_p_swp p1 l <= dist p1 p2).
+Proof.
+rewrite /dist /dist_p_swp.
+set p1_x := p1 .x   ; set p1_y := p1 .both; 
+set p2_x := p2 .x   ; set p2_y := p2 .both;   
+set l_y  := sweep l .
+move=> p1_under_l p2_above_l.
+
+Search (Num.sqrt _). (* sqrtr_sqr *)
+Search "sqrt" (_ <= _). (* ler_sqrt *)
+rewrite -sqrtr_sqr. rewrite ler_sqrt.
+rewrite -subr_ge0. Locate "`|".
+
+have additive_dist : (`| p2_y - p1_y| = `|p2_y - l_y| +  `|l_y - p1_y|).
+(* - rewrite -!sqrtr_sqr. *)
+- rewrite !ger0_norm. mc_ring.
+- by rewrite subr_ge0. by rewrite subr_ge0. rewrite subr_ge0.
+- move: p1_under_l p2_above_l. apply leqr_trans.
+
+have E1 : ( (p2_y - p1_y) ^+ 2 =
+           (((p2_y - l_y) ^+ 2) + ((l_y - p1_y) ^+ 2))^+ 2).
+- move: additive_dist. rewrite -!sqrtr_sqr.
+rewrite sqr_sqrtr.
+Search ((Num.sqrt _) ^+ _).
+set a := Num.sqrt ((p2_y - p1_y) ^+ 2); set b := Num.sqrt ((p2_y - l_y) ^+ 2);
+set c := Num.sqrt ((l_y - p1_y) ^+ 2).
+rewrite [a = b + c](_ : _ = a ^+ 2
+
+ move /eqP.
+
+ rewrite eq_sym.
+set p2p1 := (p2_y - p1_y) ^+ 2.
+
+Se
+
+have shit : ( (Num.sqrt ((p2_y - l_y) ^+ 2) + Num.sqrt ((l_y - p1_y) ^+ 2) ==
+              p2p1 || - p2p1 ) ).
+rewrite -eqf_sqr.
+  
+- rewrite -eqr_sqrt. Search "sqrt" "sqr" "eq".
+
+
+have additive_dist : (`| p2_y - p1_y| = `|p2_y - l_y| +  `|l_y - p1_y|).
+
+rewrite [((p1 .x) - (p2 .x)) ^ 2 + ((p1 .both) - (p2 .both)) ^ 2 
+         -((p1 .both) - sweep l) ^+ 2](_ : _ = ((p1 .x) - (p2 .x)) ^ 2  +
+                                      ((p2 .both) ^ 2 - (sweep l) ^+ 2) + 
+                                      (2%:R * (p1 .both) * ( (sweep l)  
+                                                            - (p2 .both) ))).
+                                                            
+ 
+
 
 (* ------------------------------------------------------------------------- *)
 
