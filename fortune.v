@@ -712,6 +712,41 @@ Proof.
   by[]. by[]. by[].
 
   mc_ring. mc_ring. Qed.
+  
+Check Num.Def.ler .
+(* I need to figure out how to split = when it means iff *)
+Lemma leqr_sqrt_if (a b : R) : 
+  0 <= b
+-> Num.sqrt a <= Num.sqrt b
+-> a <= b.
+Proof. (* Turns out to be a useless in our case :\ *)
+  rewrite [0 <= b]ler_eqVlt.  move=>  /orP b_cases. destruct b_cases.
+  move: H. move /eqP. move=> b_eq_0.
+  rewrite -b_eq_0.  rewrite sqrtr0.
+  have sqr_pos : (0<= Num.sqrt a). 
+  - by rewrite sqrtr_ge0. move=> sqr_le0.
+  have sqrt_sand : ( Num.sqrt a <= 0 <= Num.sqrt a).
+  unfold Num.Def.ler.
+  unfold Num.Def.ler in sqr_pos. unfold Num.Def.ler in sqr_le0.
+  apply /andP. split. by[]. by[].
+  move: sqrt_sand. rewrite -eqr_le.  rewrite sqrtr_eq0. by[].
+  rewrite ler_sqrt. by[].  by[].
+  Qed.
+
+Lemma leqr_sqrt_only_if (a b : R) : 
+  0 <= b
+-> a <= b
+-> Num.sqrt a <= Num.sqrt b.
+Proof. 
+  rewrite [0 <= b]ler_eqVlt.  move=>  /orP b_cases. destruct b_cases.
+  move: H. move /eqP. move=> b_eq_0.
+  rewrite -b_eq_0. move=> a_leq0.  rewrite sqrtr0 ler0_sqrtr.
+  by[]. by[]. 
+  rewrite ler_sqrt. by[]. by[].
+  Qed.
+  
+   Search "sqrt" (_ <= _).
+
 
 
 (* --------------------- dist is a metric function ------------------------- *)
@@ -843,60 +878,92 @@ Proof.
   
 Search "sqr" "eq". (* eqr_sqrt *)
 
+Lemma eqr_sqr (x y : R) : x = y -> x^+ 2 = y^+ 2.
+Proof. move=> eq_xy. by rewrite eq_xy. Qed.
+
+
 Lemma dist_p_l_p_ge (p1 p2 : point) (l : R*point) : 
+(* Any point above the sweepline is more distant than the sweepline *)
    (p1 .y   <= (sweep l) )
 -> (sweep l <=  (p2 .y)  )
 -> (dist_p_swp p1 l <= dist p1 p2).
 Proof.
-rewrite /dist /dist_p_swp.
-set p1_x := p1 .x   ; set p1_y := p1 .both; 
-set p2_x := p2 .x   ; set p2_y := p2 .both;   
-set l_y  := sweep l .
-move=> p1_under_l p2_above_l.
+  rewrite /dist /dist_p_swp.
+  set p1_x := p1 .x   ; set p1_y := p1 .both; 
+  set p2_x := p2 .x   ; set p2_y := p2 .both;   
+  set l_y  := sweep l .
+  move=> p1_under_l p2_above_l.
 
-Search (Num.sqrt _). (* sqrtr_sqr *)
-Search "sqrt" (_ <= _). (* ler_sqrt *)
-rewrite -sqrtr_sqr. rewrite ler_sqrt.
-rewrite -subr_ge0. Locate "`|".
+  Search (Num.sqrt _). (* sqrtr_sqr *)
+  Search _ (Num.sqrt _ <= Num.sqrt _). (* ler_sqrt *)
+  rewrite -sqrtr_sqr. rewrite leqr_sqrt_only_if. 
+  by[].
+  have p1p2_pos : (0<= (p1_x - p2_x) ^ 2).
+  - by rewrite sqr_ge0.
+  have p1p2_y_pos : (0<= (p1_y - p2_y) ^ 2).
+  - by rewrite sqr_ge0.
+  by rewrite addr_ge0.
+  have additive_dist : (`| p2_y - p1_y| = `|p2_y - l_y| +  `|l_y - p1_y|).
+  (* - rewrite -!sqrtr_sqr. *)
+  - rewrite !ger0_norm. mc_ring.
+  - by rewrite subr_ge0. by rewrite subr_ge0. rewrite subr_ge0.
+  - move: p1_under_l p2_above_l. apply leqr_trans.
 
-have additive_dist : (`| p2_y - p1_y| = `|p2_y - l_y| +  `|l_y - p1_y|).
-(* - rewrite -!sqrtr_sqr. *)
-- rewrite !ger0_norm. mc_ring.
-- by rewrite subr_ge0. by rewrite subr_ge0. rewrite subr_ge0.
-- move: p1_under_l p2_above_l. apply leqr_trans.
-
-have E1 : ( (p2_y - p1_y) ^+ 2 =
-           (((p2_y - l_y) ^+ 2) + ((l_y - p1_y) ^+ 2))^+ 2).
-- move: additive_dist. rewrite -!sqrtr_sqr.
-rewrite sqr_sqrtr.
-Search ((Num.sqrt _) ^+ _).
-set a := Num.sqrt ((p2_y - p1_y) ^+ 2); set b := Num.sqrt ((p2_y - l_y) ^+ 2);
-set c := Num.sqrt ((l_y - p1_y) ^+ 2).
-rewrite [a = b + c](_ : _ = a ^+ 2
-
- move /eqP.
-
- rewrite eq_sym.
-set p2p1 := (p2_y - p1_y) ^+ 2.
-
-Se
-
-have shit : ( (Num.sqrt ((p2_y - l_y) ^+ 2) + Num.sqrt ((l_y - p1_y) ^+ 2) ==
-              p2p1 || - p2p1 ) ).
-rewrite -eqf_sqr.
+  have E1 : ((p2_y - p1_y) ^+ 2 = (p2_y - l_y) ^+ 2 
+		       + Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2) *+ 2 
+		       + (l_y - p1_y) ^+ 2 ).
+  - move: additive_dist. rewrite -!sqrtr_sqr. 
+  - move=> eq1. apply (eqr_sqr) in eq1.  Search ((Num.sqrt _) ^+ _).
+  - rewrite sqr_sqrtr in eq1.  
+  - rewrite [( Num.sqrt ((p2_y - l_y) ^+ 2)
+             + Num.sqrt ((l_y - p1_y) ^+ 2)) ^+ 2]sqrrD in eq1.
+  - rewrite !sqr_sqrtr in eq1.
+  - by[].
   
-- rewrite -eqr_sqrt. Search "sqrt" "sqr" "eq".
+  by rewrite sqr_ge0. by rewrite sqr_ge0. by rewrite sqr_ge0.
+  rewrite -subr_ge0.
+  rewrite [(p1_y - p2_y) ^ 2 ]sqrDC [(p1_y - l_y) ^+ 2 ]sqrDC.
+  rewrite E1.
+  rewrite !addrA.  
+  have eq0 : ((l_y - p1_y) ^+ 2 - (l_y - p1_y) ^+ 2 =0  ) .
+  - mc_ring.
+  rewrite [(p1_x - p2_x) ^ 2 + (p2_y - l_y) ^+ 2 +
+  Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2) +
+  Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2) + 
+  (l_y - p1_y) ^+ 2 - (l_y - p1_y) ^+ 2]
+          (_ : _ = (p1_x - p2_x) ^ 2 + (p2_y - l_y) ^+ 2 +
+  Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2) +
+  Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2) ).
+  rewrite -!sqrtrM. Search "ge" (Num.sqrt _).
+  have sqrt1_pos : 
+  (0<= Num.sqrt ((p2_y - l_y) ^+ 2 * (l_y - p1_y) ^+ 2)).
+  - apply sqrtr_ge0.
+  set X := Num.sqrt ((p2_y - l_y) ^+ 2 * (l_y - p1_y) ^+ 2).
+  have X_pos : (0<= X + X).
+  Search _ (0<= ?x) (0<= ?y) (0<= ?x + ?y).
+  by rewrite addr_ge0.
+  rewrite -addrA.
+  set Y := X+X.
+  have sqr_pos  : (0<= (p2_y - l_y) ^+ 2).
+  - by rewrite sqr_ge0.
+  have sqrD_pos : (0<= (p1_x - p2_x) ^ 2 + (p1_y - p2_y) ^ 2).
+  rewrite addr_ge0. by[].
+  rewrite sqr_ge0. by[].
+  rewrite sqr_ge0. by[].
+  rewrite addr_ge0. by[].
+  rewrite addr_ge0. by[].
+  rewrite sqr_ge0. by[].
+  rewrite sqr_ge0. by[].
+  by[]. rewrite sqr_ge0. by[].
+  (* for preformance *)
+  set X := 
+  (( p1_x - p2_x) ^ 2 + (p2_y - l_y) ^+ 2 +
+     Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2)  
+   + Num.sqrt ((p2_y - l_y) ^+ 2) * Num.sqrt ((l_y - p1_y) ^+ 2) ).
+  mc_ring.
+  Qed.
 
-
-have additive_dist : (`| p2_y - p1_y| = `|p2_y - l_y| +  `|l_y - p1_y|).
-
-rewrite [((p1 .x) - (p2 .x)) ^ 2 + ((p1 .both) - (p2 .both)) ^ 2 
-         -((p1 .both) - sweep l) ^+ 2](_ : _ = ((p1 .x) - (p2 .x)) ^ 2  +
-                                      ((p2 .both) ^ 2 - (sweep l) ^+ 2) + 
-                                      (2%:R * (p1 .both) * ( (sweep l)  
-                                                            - (p2 .both) ))).
-                                                            
- 
+(*  lk ikh *)
 
 
 (* ------------------------------------------------------------------------- *)
