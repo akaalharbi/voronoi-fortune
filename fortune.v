@@ -847,21 +847,23 @@ Definition sweep (l : R*point) : R := ((snd l) .y).
 (* Given a line, return its y coordinate *)
 
 
-Definition dist_p_swp (p : point) (l : R*point) := (* d(p1:point , l:line) *)
+Definition dist_p_swp' (p : point) (l : R*point) := (* d(p1:point , l:line) *)
 (Num.norm (p.y - (sweep l))) .
 
+Definition dist_p_swp (p : point) (y_s : R) := (* d(p1:point , l:line) *)
+(Num.norm (p.y - y_s)) .
 
 
-Lemma dist_l_ge (p : point) (l1 l2 : R*point) : 
+Lemma dist_l_ge (p : point) (l1 l2 : R) : 
 (* Any sweepline above the current sweepline is further away *)
-      p .y <= (sweep l1)
-      -> (sweep l1) <= (sweep l2)
+      p .y  <= l1
+      -> l1 <= l2
       -> (dist_p_swp p l1) <= (dist_p_swp p l2).
 Proof.
   unfold dist_p_swp.
   Search "norm" (_ <= _) (_ = _). (* ger0_norm  *)
   Search _ (0 <= _) (_ <= _). (* subr_ge0 *)
-  set p_y := p .both; set swp1 := sweep l1; set swp2 := sweep l2.
+  set p_y := p .both; set swp1 := l1; set swp2 := l2.
   Search _  "trans".
   intros H1 H2. 
   have H3 : p_y <= swp2.
@@ -882,16 +884,16 @@ Lemma eqr_sqr (x y : R) : x = y -> x^+ 2 = y^+ 2.
 Proof. move=> eq_xy. by rewrite eq_xy. Qed.
 
 
-Lemma dist_p_l_p_ge (p1 p2 : point) (l : R*point) : 
+Lemma dist_p_l_p_ge (p1 p2 : point) (l : R) : 
 (* Any point above the sweepline is more distant than the sweepline *)
-   (p1 .y   <= (sweep l) )
--> (sweep l <=  (p2 .y)  )
+   (p1 .y <= l     )
+-> (l     <=  p2 .y)
 -> (dist_p_swp p1 l <= dist p1 p2).
 Proof.
   rewrite /dist /dist_p_swp.
   set p1_x := p1 .x   ; set p1_y := p1 .both; 
   set p2_x := p2 .x   ; set p2_y := p2 .both;   
-  set l_y  := sweep l .
+  set l_y  :=  l .
   move=> p1_under_l p2_above_l.
 
   Search (Num.sqrt _). (* sqrtr_sqr *)
@@ -963,12 +965,12 @@ Proof.
   mc_ring.
   Qed.
 
-Lemma le_sites_swp (p1 p2 p3: point) (l : R*point) :
+Lemma le_sites_swp (p1 p2 p3: point) (l : R) :
 (* If a point p2 closer to p1 than the sweepline l, then it's closer to p1 *)
 (* than any point, p3, above the sweepline.                                *)
-    p1 .y       <= (sweep l)
-->  p2 .y       <= (sweep l) (* this condition , C1, should be removed! *)
--> (sweep l)    <= (p3 .y)
+    p1 .y       <= l
+->  p2 .y       <= l (* this condition , C1, should be removed! *)
+->  l           <= (p3 .y)
 -> (dist p1 p2) <= (dist_p_swp p2 l)
 -> (dist p1 p2) <= (dist p2 p3).
 Proof.
@@ -986,25 +988,50 @@ by apply leqr_trans. Qed.
 
 
 (* ------------------------------- Parabolas ------------------------------- *)
-(* Warning: In this section we considered the sweepline as an element of R   *)
-(* rather than the type of line, in contrast what we've done above!          *)
-(* p is a focal point, y_s the sweepline. TODO be consistent!                *)
+(* Let y_s denotes a sweepline, in the section above we used the notation l  *)
+(* Let p   denotes the focal point of a parabola                             *)
+Definition ppar (y_s : R) (p : point)(x1 : R) : point (* output point or R 🤔 *)
+           := let p_x := p .x in
+              let p_y := p .y in
+              Point x1  ( ((p_x - x1)^2 + (p_x)^2 - (y_s)^2)
+                          /((2%:R) * (p_y -  y_s))           ).
 
+Lemma par_eq (y_s x1 : R) (p : point) :
+(* A point on a parabola is equidistant to the line y_s and the focal p *)
+let p1 := ppar  y_s p x1 in
+(dist p p1) = (dist_p_swp p1 y_s ).
+Proof. 
+  intros p1.
+  rewrite /dist /dist_p_swp -sqrtr_sqr. 
+  congr (Num.sqrt _ ).
+  (* moves everyting to one side *)
+  apply /eqP. rewrite -subr_eq0. apply /eqP.
+  (* remove (p1 .both) ^ 2 *)
+  rewrite [   ((p .x) - (p1 .x)) ^ 2 + 
+              ((p .both) - (p1 .both)) ^ 2 - ((p1 .both) - y_s) ^+ 2]
+          (_:_ =  ((p .x) - (p1 .x)) ^+ 2 - (y_s) ^+ 2
+                + (2%:R) * (p1 .both) * (y_s - (p .both))       ).
+  rewrite /p1 /ppar /=.
+  
+  rewrite -[(y_s - (p .both))]opprB.
+  set a := (((p .x) - x1) ^ 2 + (p .x) ^ 2 - y_s ^ 2);
+  set b := ((p .both) - y_s).
+  rewrite -div1r .
+  rewrite [2%:R * (a * (1 / (2%:R * b))) * - b]
+          (_:_ = - a * ((2%:R * b)*((1 / (2%:R * b))))); last by mc_ring.
+  set c := (2%:R * b).
+  rewrite [(c * (1 / c))](_:_= c/c); last by rewrite div1r. 
+  rewrite divff. rewrite mulr1. rewrite /a.
 
-Definition par (y_s : R) (p : point)  := 
-  let p_x := p .x in
-  let p_y := p .y in
-  (fun (p1_x:R) =>
-    ( (p_x - p1_x)^2 + (p_x)^2 - (y_s)^2 )/( (2%:R) * (p_y - y_s) )   ).
+  rewrite /exprz.
+  set t := ((p .x) - x1) ^+ 2 . (* reduce clutter *)
+  rewrite !opprD (addrC t) !addrA !addrK.
+  rewrite -[-- y_s ^+ 2]mulN1r mulrNN mul1r (addrC ( - y_s ^+ 2 )).
+ (* There is a mistake here *)
+ (* TODO check the equation *)
 
-Definition ppar (y_s : R) (p : point)( x : R) : point (* output point or R 🤔 *)
-           := Point x  ((par y_s p) x).
-
-Lemma par_eq (y_s x : R) (p : point) :
-let p1 := ppar  y_s p x in
-let l  := line
-(dist p p1) = (dist p p1).
-intros. 
+   
+  
 (* ------------------------------------------------------------------------- *)
 
 
