@@ -948,12 +948,12 @@ Proof.
   - by rewrite sqr_ge0.
   have sqrD_pos : (0<= (p1_x - p2_x) ^ 2 + (p1_y - p2_y) ^ 2).
   rewrite addr_ge0. by[].
-  rewrite sqr_ge0. by[].
-  rewrite sqr_ge0. by[].
+  rewrite sqr_ge0.  by[].
+  rewrite sqr_ge0.  by[].
   rewrite addr_ge0. by[].
   rewrite addr_ge0. by[].
-  rewrite sqr_ge0. by[].
-  rewrite sqr_ge0. by[].
+  rewrite sqr_ge0.  by[].
+  rewrite sqr_ge0.  by[].
   by[]. rewrite sqr_ge0. by[].
   (* for preformance *)
   set X := 
@@ -963,9 +963,48 @@ Proof.
   mc_ring.
   Qed.
 
-(*  lk ikh *)
+Lemma le_sites_swp (p1 p2 p3: point) (l : R*point) :
+(* If a point p2 closer to p1 than the sweepline l, then it's closer to p1 *)
+(* than any point, p3, above the sweepline.                                *)
+    p1 .y       <= (sweep l)
+->  p2 .y       <= (sweep l) (* this condition , C1, should be removed! *)
+-> (sweep l)    <= (p3 .y)
+-> (dist p1 p2) <= (dist_p_swp p2 l)
+-> (dist p1 p2) <= (dist p2 p3).
+Proof.
+(* TODO Remove C1, and prove if (dist p1 p2) < (sweep l) then *)
+(* p2.y <= (sweep l). To proceed with this add a hypothesis   *)
+
+intros p1_below_l p2_below_l p3_above_l p2_away_l.
+
+have p2_away_p3 : (dist_p_swp p2 l <= dist p2 p3).
+- by apply dist_p_l_p_ge.
+move: p2_away_l p2_away_p3.
+by apply leqr_trans. Qed.
 
 
+
+
+(* ------------------------------- Parabolas ------------------------------- *)
+(* Warning: In this section we considered the sweepline as an element of R   *)
+(* rather than the type of line, in contrast what we've done above!          *)
+(* p is a focal point, y_s the sweepline. TODO be consistent!                *)
+
+
+Definition par (y_s : R) (p : point)  := 
+  let p_x := p .x in
+  let p_y := p .y in
+  (fun (p1_x:R) =>
+    ( (p_x - p1_x)^2 + (p_x)^2 - (y_s)^2 )/( (2%:R) * (p_y - y_s) )   ).
+
+Definition ppar (y_s : R) (p : point)( x : R) : point (* output point or R 🤔 *)
+           := Point x  ((par y_s p) x).
+
+Lemma par_eq (y_s x : R) (p : point) :
+let p1 := ppar  y_s p x in
+let l  := line
+(dist p p1) = (dist p p1).
+intros. 
 (* ------------------------------------------------------------------------- *)
 
 
