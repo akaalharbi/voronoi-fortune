@@ -1,3 +1,4 @@
+
 Require Import String.
 From mathcomp Require Import all_ssreflect all_algebra all_field.
 Require Import QArith.
@@ -990,28 +991,33 @@ by apply leqr_trans. Qed.
 (* ------------------------------- Parabolas ------------------------------- *)
 (* Let y_s denotes a sweepline, in the section above we used the notation l  *)
 (* Let p   denotes the focal point of a parabola                             *)
-Definition ppar (y_s : R) (p : point)(x1 : R) : point (* output point or R 🤔 *)
-           := let p_x := p .x in
+Definition par (y_s : R) (p : point)(x1 : R) : point (* output point/R 🤔   *)
+           := let p_x := p .x in                (* It should be a polynomial *)
               let p_y := p .y in
               Point x1  ( ((p_x - x1)^2 + (p_x)^2 - (y_s)^2)
                           /((2%:R) * (p_y -  y_s))           ).
 
-Lemma par_eq (y_s x1 : R) (p : point) :
+(* TODO write ppar function that returns a polynomial *)
+
+Locate "^*".
+
+Lemma par_eq (y_s x1 : R) (p : point) : 
 (* A point on a parabola is equidistant to the line y_s and the focal p *)
-let p1 := ppar  y_s p x1 in
-(dist p p1) = (dist_p_swp p1 y_s ).
+(p .both) - y_s != 0 
+-> let p1 := par  y_s p x1 in
+   (dist p p1) = (dist_p_swp p1 y_s ).
 Proof. 
-  intros p1.
+  intros non_singular p1.
   rewrite /dist /dist_p_swp -sqrtr_sqr. 
   congr (Num.sqrt _ ).
   (* moves everyting to one side *)
   apply /eqP. rewrite -subr_eq0. apply /eqP.
-  (* remove (p1 .both) ^ 2 *)
+  (* remove (p1 .both) ^ 2 TODO is this correct?! *)
   rewrite [   ((p .x) - (p1 .x)) ^ 2 + 
               ((p .both) - (p1 .both)) ^ 2 - ((p1 .both) - y_s) ^+ 2]
-          (_:_ =  ((p .x) - (p1 .x)) ^+ 2 - (y_s) ^+ 2
-                + (2%:R) * (p1 .both) * (y_s - (p .both))       ).
-  rewrite /p1 /ppar /=.
+          (_:_ =  ((p .x) - (p1 .x)) ^+ 2 + (p .x) ^+ 2 - (y_s) ^+ 2
+                + (2%:R) * (p1 .both) * (y_s - (p .both))            ).
+  rewrite /p1 /par /=.
   
   rewrite -[(y_s - (p .both))]opprB.
   set a := (((p .x) - x1) ^ 2 + (p .x) ^ 2 - y_s ^ 2);
@@ -1021,17 +1027,40 @@ Proof.
           (_:_ = - a * ((2%:R * b)*((1 / (2%:R * b))))); last by mc_ring.
   set c := (2%:R * b).
   rewrite [(c * (1 / c))](_:_= c/c); last by rewrite div1r. 
-  rewrite divff. rewrite mulr1. rewrite /a.
+  rewrite divff. by rewrite mulr1 addrN. 
+  (* by rewrite -(add0r (a-a)) addrA (addrK a).*)
+  rewrite /c mulf_neq0. by[]. 
+  apply lt0r_neq0. by rewrite ltr0Sn. by[].
+  (* TODO Something wrong with the assumed expression *)
+  rewrite  /p1 /par /exprz.
+  set X := ((p .x) - (p1 .x)) ^+ 2 .
+  Abort.
 
-  rewrite /exprz.
-  set t := ((p .x) - x1) ^+ 2 . (* reduce clutter *)
-  rewrite !opprD (addrC t) !addrA !addrK.
-  rewrite -[-- y_s ^+ 2]mulN1r mulrNN mul1r (addrC ( - y_s ^+ 2 )).
- (* There is a mistake here *)
- (* TODO check the equation *)
 
-   
-  
+
+Fixpoint bf (y_s d: R) ( sites : seq point) (x : R) : R := 
+  (* Alternative definition of the beachline            *)
+  (* d is a dummy default value. We recommend chosing   *)
+  (* p' := (head (Point 0%:R 1%:R) sites)               *)
+  (* d := snd (par y_s p' x)                            *)
+  match sites with
+  | s1 :: t => maxR (snd (par y_s s1 x)) (bf y_s d t x)
+  | _       => d
+  end.
+
+(*                                 TODO                                      *)
+(* write par as a member of  poly R                                          *)
+(* Show the existence of s = <s_0, s_1, ..., s_n> (focal points) and         *)
+(* m = <m_0, m_1, ..., m_{n-1}>  (meeting points between successive arcs)    *)
+(* such that:                                                                *)
+(* - forall i, i <= n -> s_i \in {p_i | p_i_x < y_s}                         *)
+(* - forall i, i < n -> m_i < m_{i+1}                                        *)
+(* - forall i, i < n - 1                                                     *)
+(*    -> forall x, m_i <= x <= m_{i+1} -> bf(x) = par(y_s, s_{i + 1}, x)     *)
+(* - forall x, x <= m_0 -> bf(x) = par(y_s, s_0, x)                          *)
+(* - forall x, m_{n-1} <= x -> bf (x) = par(y_s, s_n, x)                     *)
+
+
 (* ------------------------------------------------------------------------- *)
 
 
