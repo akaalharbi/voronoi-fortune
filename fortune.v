@@ -630,12 +630,12 @@ Fixpoint add_infinites (bl : seq arc) (es : seq edge) : seq edge :=
 (* ======================= tactics ========================================= *)
 Definition R' := (R : Type).
 
-Definition mul : R' -> R' -> R' := @GRing.mul _.
-Definition add : R' -> R' -> R' := @GRing.add _.
-Definition sub : R' -> R' -> R' := (fun x y => x - y).
-Definition opp : R' -> R' := @GRing.opp _.
+Definition mul  : R' -> R' -> R' := @GRing.mul _.
+Definition add  : R' -> R' -> R' := @GRing.add _.
+Definition sub  : R' -> R' -> R' := (fun x y => x - y).
+Definition opp  : R' -> R' := @GRing.opp _.
 Definition zero : R' := 0.
-Definition one : R' := 1.
+Definition one  : R' := 1.
 
 Definition R2_theory :=
   @mk_rt R' zero one add mul sub opp
@@ -706,16 +706,17 @@ Proof.
 
   rewrite [0](_ : _ = y - y).
   rewrite -subr_ge0.
-  rewrite [( z - x - (y - y))](_ : _ = (z-y) + (y - x)).
+  rewrite [( z - x - (y - y))](_ : _ = (z-y) + (y - x)); last by mc_ring.
   move: H2 H1. set h1 := (z-y); set h2 := (y-x). move=> H1 H2.
   rewrite addr_ge0 /=.
 
   by[]. by[]. by[].
 
-  mc_ring. mc_ring. Qed.
-  
-Check Num.Def.ler .
-(* I need to figure out how to split = when it means iff *)
+  mc_ring. Qed.
+
+
+
+(* TODO rename the lemmas: leqr to ler and fix the proofs that use them *)
 Lemma leqr_sqrt_if (a b : R) : 
   0 <= b
 -> Num.sqrt a <= Num.sqrt b
@@ -745,10 +746,16 @@ Proof.
   by[]. by[]. 
   rewrite ler_sqrt. by[]. by[].
   Qed.
-  
-   Search "sqrt" (_ <= _).
 
-
+Lemma ler_sqrt (a b : R) : 
+  0 <= b
+-> (a <= b) = (Num.sqrt a <= Num.sqrt b).
+Proof.
+  move=> b_pos. 
+  apply /idP/idP.
+  - by apply leqr_sqrt_only_if.
+  - by apply leqr_sqrt_if.
+  Qed.
 
 (* --------------------- dist is a metric function ------------------------- *)
 Print rcfType.
@@ -991,62 +998,67 @@ by apply leqr_trans. Qed.
 (* ------------------------------- Parabolas ------------------------------- *)
 (* Let y_s denotes a sweepline, in the section above we used the notation l  *)
 (* Let p   denotes the focal point of a parabola                             *)
-Definition par (y_s : R) (p : point)(x1 : R) : point (* output point/R 🤔   *)
+Definition par (y_s : R) (p : point)(x1 : R) : R 
            := let p_x := p .x in                (* It should be a polynomial *)
               let p_y := p .y in
-              Point x1  ( ((p_x - x1)^2 + (p_x)^2 - (y_s)^2)
+              ( ((p_x - x1)^2 + (p_y)^2 - (y_s)^2)
                           /((2%:R) * (p_y -  y_s))           ).
 
 (* TODO write ppar function that returns a polynomial *)
 
-Locate "^*".
+
 
 Lemma par_eq (y_s x1 : R) (p : point) : 
 (* A point on a parabola is equidistant to the line y_s and the focal p *)
 (p .both) - y_s != 0 
--> let p1 := par  y_s p x1 in
+-> let p1 := Point x1 (par  y_s p x1) in
    (dist p p1) = (dist_p_swp p1 y_s ).
-Proof. 
+Proof.
   intros non_singular p1.
-  rewrite /dist /dist_p_swp -sqrtr_sqr. 
-  congr (Num.sqrt _ ).
+  rewrite /dist /dist_p_swp -sqrtr_sqr /exprz. 
+  congr (Num.sqrt _ ). 
+  
+  have p1_x : (p1 .x = x1).
+  by rewrite /p1 /=.
+
   (* moves everyting to one side *)
   apply /eqP. rewrite -subr_eq0. apply /eqP.
-  (* remove (p1 .both) ^ 2 TODO is this correct?! *)
-  rewrite [   ((p .x) - (p1 .x)) ^ 2 + 
-              ((p .both) - (p1 .both)) ^ 2 - ((p1 .both) - y_s) ^+ 2]
-          (_:_ =  ((p .x) - (p1 .x)) ^+ 2 + (p .x) ^+ 2 - (y_s) ^+ 2
-                + (2%:R) * (p1 .both) * (y_s - (p .both))            ).
-  rewrite /p1 /par /=.
+  set m := ((p .x) - (p1 .x)) ^+ 2.
   
+  (* remove (p1 .both) ^ 2 TODO is this correct?! *)
+  rewrite [   m + 
+              ((p .both) - (p1 .both)) ^ 2 - ((p1 .both) - y_s) ^+ 2]
+          (_:_ =  m + (p .both) ^+ 2 - (y_s) ^+ 2
+                + (2%:R) * (p1 .both) * (y_s - (p .both))            );
+   last by mc_ring.
+  
+  set n := m + (p .both) ^+ 2 - y_s ^+ 2 .
+  rewrite  /p1  /par /=.
   rewrite -[(y_s - (p .both))]opprB.
-  set a := (((p .x) - x1) ^ 2 + (p .x) ^ 2 - y_s ^ 2);
-  set b := ((p .both) - y_s).
-  rewrite -div1r .
-  rewrite [2%:R * (a * (1 / (2%:R * b))) * - b]
-          (_:_ = - a * ((2%:R * b)*((1 / (2%:R * b))))); last by mc_ring.
-  set c := (2%:R * b).
-  rewrite [(c * (1 / c))](_:_= c/c); last by rewrite div1r. 
-  rewrite divff. by rewrite mulr1 addrN. 
-  (* by rewrite -(add0r (a-a)) addrA (addrK a).*)
-  rewrite /c mulf_neq0. by[]. 
+  set a := (((p .x) - x1) ^ 2 + (p .both) ^ 2 - y_s ^ 2).
+  set b := ((p .both) - y_s). 
+  rewrite mulrC mulrA mulNr [b * 2%:R]mulrC. set k :=  2%:R*b. 
+  rewrite [ - k * (a / k)  ]
+          (_ : _ = - a * (k / k) ); last by mc_ring.
+  rewrite divff. rewrite mulr1.
+  rewrite /n /a /m p1_x /exprz. by mc_ring.
+
+  rewrite mulf_neq0. by[].
   apply lt0r_neq0. by rewrite ltr0Sn. by[].
-  (* TODO Something wrong with the assumed expression *)
-  rewrite  /p1 /par /exprz.
-  set X := ((p .x) - (p1 .x)) ^+ 2 .
-  Abort.
+
+  Qed.
 
 
-
-Fixpoint bf (y_s d: R) ( sites : seq point) (x : R) : R := 
+Fixpoint bf (y_s: R) (d : point) ( sites : seq point) (x : R) : R := 
   (* Alternative definition of the beachline            *)
-  (* d is a dummy default value. We recommend chosing   *)
-  (* p' := (head (Point 0%:R 1%:R) sites)               *)
-  (* d := snd (par y_s p' x)                            *)
+  (* d is a dummy default point. We recommend chosing   *)
+  (* d := (head (Point 0%:R 1%:R) sites)                *)
   match sites with
-  | s1 :: t => maxR (snd (par y_s s1 x)) (bf y_s d t x)
-  | _       => d
+  | s1 :: t => maxR (par y_s s1 x) (bf y_s d t x)
+  | _       => (par y_s d x)
   end.
+
+Print par_eq.
 
 (*                                 TODO                                      *)
 (* write par as a member of  poly R                                          *)
