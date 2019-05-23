@@ -1058,8 +1058,32 @@ Fixpoint bf (y_s: R) (d : point) ( sites : seq point) (x : R) : R :=
   | _       => (par y_s d x)
   end.
 
-Print par_eq.
+(* --------------------------- working space ------------------------------- *)
+Lemma addf_div_eq_d :
+forall  (x1 y1 x2 y2 : R ),
+y1 != 0 ->
+y2 != 0 ->
+y1 = y2 -> 
+x1 / y1 + x2 / y2 = (x1 + x2) / (y1).
+Proof.
+  intros. rewrite addf_div. 
+  rewrite H1. Search _ "mul" ( _ * _ + _).
+  have 
 
+(* move this to auxiliairy lemmas section *)
+
+Lemma max_par (y_s x : R) (p : point) :  (* or peak_par *)
+p .y < y_s 
+-> (exists (x':R), ((par y_s p x ) < (par y_s p x'))  ).
+Proof.
+  move=> p_lower_y_s.
+  exists (p .x).
+  Search _ (_ < _) (_ - _).
+  rewrite /par -subr_gt0. set d := (2%:R * ((p .both) - y_s)).
+  rewrite [(((p .x) - (p .x)) ^ 2)](_:_ = 0 ); last by mc_ring.
+  rewrite add0r. 
+  Search _ (_ / _ + _ ). Abort.
+  
 (*                                 TODO                                      *)
 (* write par as a member of  poly R                                          *)
 (* Show the existence of s = <s_0, s_1, ..., s_n> (focal points) and         *)
