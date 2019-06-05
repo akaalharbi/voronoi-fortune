@@ -1058,32 +1058,48 @@ Fixpoint bf (y_s: R) (d : point) ( sites : seq point) (x : R) : R :=
   | _       => (par y_s d x)
   end.
 
-(* --------------------------- working space ------------------------------- *)
-Lemma addf_div_eq_d :
-forall  (x1 y1 x2 y2 : R ),
-y1 != 0 ->
-y2 != 0 ->
-y1 = y2 -> 
-x1 / y1 + x2 / y2 = (x1 + x2) / (y1).
-Proof.
-  intros. rewrite addf_div. 
-  rewrite H1. Search _ "mul" ( _ * _ + _).
-  have 
-
-(* move this to auxiliairy lemmas section *)
 
 Lemma max_par (y_s x : R) (p : point) :  (* or peak_par *)
-p .y < y_s 
--> (exists (x':R), ((par y_s p x ) < (par y_s p x'))  ).
+p .y < y_s     ->
+p .x - x != 0  ->
+((par y_s p x ) < (par y_s p (p .x))).
 Proof.
-  move=> p_lower_y_s.
-  exists (p .x).
-  Search _ (_ < _) (_ - _).
+  move=> p_lower_y_s non_peak.
+
   rewrite /par -subr_gt0. set d := (2%:R * ((p .both) - y_s)).
   rewrite [(((p .x) - (p .x)) ^ 2)](_:_ = 0 ); last by mc_ring.
   rewrite add0r. 
-  Search _ (_ / _ + _ ). Abort.
+
+  have d_neg   : (d < 0).
+  - move: p_lower_y_s. rewrite -subr_lt0. rewrite /d. 
+  -  rewrite pmulr_rlt0. by[].
+  by rewrite  ltr0Sn.
+
+  rewrite -div1r.
   
+  have d_inv_neg : (d ^- 1 < 0).
+  - by rewrite -invr_lt0 in d_neg. 
+  set d_inv := d ^- 1.
+  rewrite mul1r.
+  rewrite [((p .both) ^ 2 - y_s ^ 2) * d_inv -
+           (((p .x) - x) ^ 2 + (p .both) ^ 2 - y_s ^ 2) * d_inv]
+           (_:_= (((p .both) ^ 2 - y_s ^ 2) -
+                 (((p .x) - x) ^ 2 + (p .both) ^ 2 - y_s ^ 2) )* d_inv); 
+  last by mc_ring.
+  
+  rewrite nmulr_lgt0; last by apply d_inv_neg.
+  set a := ((p .x) - x).
+  rewrite [(p .both) ^ 2 - y_s ^ 2 - (a ^ 2 + (p .both) ^ 2 - y_s ^ 2) ]
+          (_:_ = - a ^ 2); last by mc_ring.
+
+  rewrite oppr_lt0 /exprz.
+  rewrite ltr_def.
+  apply /andP.
+  split.
+  - by rewrite /a expf_neq0.
+  -  by rewrite sqr_ge0.
+  Qed.
+
 (*                                 TODO                                      *)
 (* write par as a member of  poly R                                          *)
 (* Show the existence of s = <s_0, s_1, ..., s_n> (focal points) and         *)
@@ -1096,45 +1112,11 @@ Proof.
 (* - forall x, x <= m_0 -> bf(x) = par(y_s, s_0, x)                          *)
 (* - forall x, m_{n-1} <= x -> bf (x) = par(y_s, s_n, x)                     *)
 
-
-(* ------------------------------------------------------------------------- *)
-
-
-
-
 End ab1.
 
-
-(*          is this section important?                                       *)
-(* Close Scope Q_scope.
-Section ab2.
-
-Variable R : rcfType.
-Open Scope ring_scope.
-(* belongs function, take a point p and curve  c, and returns  p in c       *)
-(* Parabolas as equal distance between a point and a directrix              *)
-(*                                                                          *)
-(* Intersection between two parabolas mean an equidistant from 3 objects    *)
-
-Definition dist (p1 p2 : point ) : R := (p1.x - p2.x)^2.
-Lemma eqMidP ( x y : point) : 
-
-
-Lemma sqrP  (x y : R) : (x - y)^2 = ( y-x)^2.
-Proof. rewrite /exprz. 
-Search (_ ^+ _) in ssralg.
-Search (_ ^+ _) (- _).
-rewrite -sqrrN.
-Search (- (_ - _)).
-by rewrite opprB.
-rewrite !exprS !expr0 !mulr1.
-rewrite GRing.Exp.
-
-End ab2.
- *)
-(* ------------------------------------------------------------------------- *)
-(*                         COMPUTATIONS                                      *)
-
+(*****************************************************************************)
+(*                           COMPUTATIONS                                    *)
+(*****************************************************************************)
 
 (* Now we shall make the code rely on rational computations. *)
 
