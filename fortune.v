@@ -1060,12 +1060,12 @@ Fixpoint bf (y_s: R) (d : point) ( sites : seq point) (x : R) : R :=
 
 
 Lemma max_par (y_s x : R) (p : point) :  (* or peak_par *)
-p .y < y_s     -> 
+p .y < y_s     ->
 p .x - x != 0  ->
 ((par y_s p x ) < (par y_s p (p .x))).
 Proof.
   move=> p_lower_y_s non_peak.
-  Search _ (_ < _) (_ - _).
+
   rewrite /par -subr_gt0. set d := (2%:R * ((p .both) - y_s)).
   rewrite [(((p .x) - (p .x)) ^ 2)](_:_ = 0 ); last by mc_ring.
   rewrite add0r. 
@@ -1093,11 +1093,10 @@ Proof.
           (_:_ = - a ^ 2); last by mc_ring.
 
   rewrite oppr_lt0 /exprz.
-  Search _ ( _ != _ ) (_ < _).
   rewrite ltr_def.
-  apply /andP. 
+  apply /andP.
   split.
-  - rewrite /a expf_neq0. by[]. by[].
+  - by rewrite /a expf_neq0.
   -  by rewrite sqr_ge0.
   Qed.
 
